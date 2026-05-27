@@ -2,26 +2,32 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
 from principal import tela_principal   # importa a tela principal
+import os
 
 def inicializar_banco():
-    conn = sqlite3.connect("saracaFarma.db")
+    db_file = "saracaFarma.db"
+    schema_file = "schema.sql"
+
+    conn = sqlite3.connect(db_file)
     cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS Usuario (
-            id_usuario INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome TEXT NOT NULL,
-            login TEXT UNIQUE NOT NULL,
-            senha TEXT NOT NULL,
-            perfil TEXT NOT NULL
-        )
-    """)
-    # Cria admin padrão se não existir
-    cursor.execute("SELECT * FROM Usuario WHERE login='admin'")
+
+    # Executa o schema.sql (garante que todas as tabelas existam)
+    with open(schema_file, "r", encoding="utf-8") as f:
+        schema_sql = f.read()
+        cursor.executescript(schema_sql)
+
+    # Garante que o admin exista
+    cursor.execute("SELECT * FROM Usuario WHERE perfil='admin'")
     if not cursor.fetchone():
-        cursor.execute("INSERT INTO Usuario (nome, login, senha, perfil) VALUES (?, ?, ?, ?)",
-                       ("Administrador", "admin", "1234", "admin"))
+        cursor.execute(
+            "INSERT INTO Usuario (nome, login, senha, perfil) VALUES (?, ?, ?, ?)",
+            ("Administrador", "admin", "1234", "admin")
+        )
+
     conn.commit()
     conn.close()
+
+
 
 def validar_login():
     usuario = entry_usuario.get()
@@ -33,7 +39,6 @@ def validar_login():
     conn.close()
     if result:
         perfil = result[0]
-        messagebox.showinfo("Login", f"Bem-vindo, perfil: {perfil}")
         root.destroy()          #Fecha a tela de login
         tela_principal(perfil)   # chama a tela principal
     else:

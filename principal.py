@@ -1,13 +1,58 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
-from admin import abrir_funcoes_admin   # importa funções administrativas
+from admin import abrir_funcoes_admin
+from produto import cadastrar_produto
+from produto import cadastrar_produtos_treeview 
+from produto import cadastrar_produtos_csv
+from tkinter import filedialog
+
+def cadastrar_lista_produtos():
+    # Função placeholder para cadastro em lote
+    arquivo = filedialog.askopenfilename(title="Selecionar arquivo de produtos", filetypes=[("CSV", "*.csv"), ("Todos", "*")])
+    if arquivo:
+        messagebox.showinfo("Cadastro em Lote", f"Arquivo selecionado: {arquivo}\nFuncionalidade ainda não implementada.")
 
 def tela_principal(perfil):
     principal = tk.Tk()
     principal.title("SaracaFarma - Tela Principal")
     principal.geometry("600x400")
     principal.configure(bg="#cce6ff")
+
+     # Faz a janela abrir maximizada
+    principal.state("zoomed")   # no Windows
+    # ou, se quiser ocupar toda a tela em qualquer sistema:
+    # principal.attributes("-fullscreen", True)
+       
+
+    # Criar barra de menu
+    menubar = tk.Menu(principal)
+
+      # Menu Cadastro
+    menu_cadastro = tk.Menu(menubar, tearoff=0)
+    #Chamada direta da função de cadastro de produto.
+    menu_cadastro.add_command(label="Cadastro Individual", command=cadastrar_produto)
+    menu_cadastro.add_command(label="Cadastro em Lote (Treeview)", command=cadastrar_produtos_treeview)
+    menu_cadastro.add_command(label="Cadastro em Lote (CSV)", command=cadastrar_produtos_csv)
+
+
+    menubar.add_cascade(label="Cadastro", menu=menu_cadastro)
+
+     # Menu Estoque
+    menu_estoque = tk.Menu(menubar, tearoff=0)
+    menu_estoque.add_command(label="Controle de Estoque", command=lambda: messagebox.showinfo("Estoque", "Controle de Estoque"))
+    menubar.add_cascade(label="Estoque", menu=menu_estoque)
+
+    # Menu Administração (somente se perfil for admin)
+    if perfil == "admin":
+        menu_admin = tk.Menu(menubar, tearoff=0)
+        menu_admin.add_command(label="Funções Administrativas", command=abrir_funcoes_admin)
+        menubar.add_cascade(label="Administração", menu=menu_admin)
+    
+       # Menu Sair
+    menu_sair = tk.Menu(menubar, tearoff=0)
+    menu_sair.add_command(label="Encerrar", command=principal.quit)
+    menubar.add_cascade(label="Sair", menu=menu_sair)
 
     barra = tk.Frame(principal, bg="#0066cc", height=40)
     barra.pack(fill="x")
@@ -16,10 +61,10 @@ def tela_principal(perfil):
     frame = tk.Frame(principal, bg="#cce6ff")
     frame.pack(pady=30)
 
-    ttk.Button(frame, text="Cadastro de Medicamentos").pack(pady=10)
-    ttk.Button(frame, text="Controle de Estoque").pack(pady=10)
-    ttk.Button(frame, text="Relatórios").pack(pady=10)
-    ttk.Button(frame, text="Funções Administrativas", command=verificar_admin).pack(pady=10)
+    
+    # Associar menu à janela
+    principal.config(menu=menubar)
+    
     principal.mainloop()
 
 def verificar_admin():
