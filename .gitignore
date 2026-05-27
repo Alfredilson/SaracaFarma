@@ -1,0 +1,6 @@
+# Banco de dados SQLite
+*.db
+
+# Cache do Python
+__pycache__/
+*.pyc
