@@ -15,7 +15,6 @@ def normalizar_data(data_str):
             continue
     raise ValueError("Formato de data inválido")
 
-
 # --- CADASTRO INDIVIDUAL ---
 def cadastrar_produto():
     janela = tk.Toplevel()
@@ -151,8 +150,6 @@ def cadastrar_produto():
     # --- Botões ---
     ttk.Button(janela, text="Buscar Produto", command=buscar_produto_por_codigo).pack(pady=5)
     ttk.Button(janela, text="Salvar", command=salvar_produto).pack(pady=20)
-
-
 
 # --- CADASTRO EM LOTE VIA TREEVIEW ---
 def cadastrar_produtos_treeview():
@@ -348,19 +345,18 @@ def cadastrar_produtos_treeview():
     # Quando o leitor enviar ENTER, chama a busca automaticamente
     entries["Código de Barras"].bind("<Return>", lambda event: buscar_produto_por_codigo())
 
-
-
-# --- CADASTRO EM LOTE VIA CSV ---
-def cadastrar_produtos_csv():
+#--- CADASTRO EM LOTE VIA CSV DO FORNECEDOR (COM PREÇO DE CUSTO E VENDA) ---
+def cadastrar_produtos_fornecedor():
     janela = tk.Toplevel()
-    janela.title("Cadastro em Lote - CSV")
-    janela.state("zoomed")  # abre maximizada
+    janela.title("Cadastro via Fornecedor - CSV")
+    janela.state("zoomed")
 
     status_label = ttk.Label(janela, text="", foreground="green")
     status_label.pack(pady=5)
 
-    # --- Treeview para exibir produtos importados ---
-    colunas = ("codigo_barras", "nome", "categoria", "apresentacao", "dosagem", "fabricante", "lote", "quantidade", "validade", "preco")
+    # --- Treeview com coluna extra de preço de custo e preço de venda ---
+    colunas = ("codigo_barras", "nome", "categoria", "apresentacao", "dosagem",
+               "fabricante", "lote", "quantidade", "validade", "preco_custo", "preco_venda")
     tree = ttk.Treeview(janela, columns=colunas, show="headings")
 
     for col in colunas:
@@ -369,6 +365,7 @@ def cadastrar_produtos_csv():
 
     tree.pack(fill="both", expand=True, pady=10)
 
+    # --- Importar CSV do fornecedor ---
     def importar_csv():
         arquivo = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
         if not arquivo:
@@ -378,79 +375,144 @@ def cadastrar_produtos_csv():
                 reader = csv.reader(f)
                 next(reader)  # pula cabeçalho
                 for row in reader:
+                    if not row or all(c.strip() == "" for c in row):
+                        continue
+                    # fornecedor manda preco_custo, preco_venda inicial = preco_custo
+                    row.append(row[-1])  # duplica preco_custo como preco_venda
                     tree.insert("", tk.END, values=row)
 
-            status_label.config(text="Produtos importados para edição!", foreground="green")
+            status_label.config(text="Produtos importados do fornecedor!", foreground="green")
+
+            #---Força o foco de volta para a janela de cadastro---
+            janela.lift()  # traz a janela para frente
+            janela.focus_force()
 
         except Exception as e:
             status_label.config(text=f"Erro ao importar CSV: {e}", foreground="red")
 
+    def editar_produto():
+        selecionado = tree.selection()
+        if not selecionado:
+            status_label.config(text="Selecione um produto para editar.", foreground="red")
+            return
+        item = selecionado[0]
+        valores = tree.item(item)["values"]
+
+        # Janela de edição
+        edit_win = tk.Toplevel(janela)
+        edit_win.title("Editar Produto Fornecedor")
+        edit_win.geometry("500x600")
+        edit_win.configure(bg="#cce6ff")
+
+        novos_valores = []
+        for i, col in enumerate(colunas):
+            ttk.Label(edit_win, text=col.capitalize()).grid(row=i, column=0, padx=5, pady=5)
+            entry = ttk.Entry(edit_win, width=30)
+            entry.insert(0, valores[i])
+            entry.grid(row=i, column=1, padx=5, pady=5)
+            novos_valores.append(entry)
+
+        def salvar_edicao():
+            atualizados = [e.get() for e in novos_valores]
+            tree.item(item, values=atualizados)
+            edit_win.destroy()
+            status_label.config(text="Produto atualizado na lista.", foreground="green")
+
+        ttk.Button(edit_win, text="Salvar Alterações", command=salvar_edicao).grid(row=len(colunas), columnspan=2, pady=10)
+
+
+    # --- Aplicar margem de lucro ---
+    def definir_margem():
+        # Janela para o usuário digitar a porcentagem
+        margem_win = tk.Toplevel(janela)
+        margem_win.title("Definir Margem de Lucro")
+        margem_win.geometry("300x150")
+        margem_win.configure(bg="#cce6ff")
+
+        ttk.Label(margem_win, text="Informe a margem (%)").pack(pady=10)
+        entry_margem = ttk.Entry(margem_win, width=10)
+        entry_margem.pack(pady=5)
+
+        def aplicar():
+            try:
+                valor = float(entry_margem.get())
+                for item in tree.get_children():
+                    valores = list(tree.item(item)["values"])
+                    preco_custo = float(str(valores[-2]).replace(",", ".").strip())
+                    preco_venda = preco_custo * (1 + valor/100)
+                    valores[-1] = round(preco_venda, 2)
+                    tree.item(item, values=valores)
+                status_label.config(text=f"Margem de {valor}% aplicada com sucesso!", foreground="green")
+                margem_win.destroy()
+            except Exception as e:
+                status_label.config(text=f"Erro ao aplicar margem: {e}", foreground="red")
+
+        ttk.Button(margem_win, text="Aplicar", command=aplicar).pack(pady=10)
+
+
+    # --- Salvar no banco (sem preço de custo) ---
     def salvar_todos():
-     conn = sqlite3.connect("saracaFarma.db")
-     cursor = conn.cursor()
-     erros = []
-     for item in tree.get_children():
-         valores = tree.item(item)["values"]
-         try:
-             (
-                 codigo_barras, nome, categoria, apresentacao,
-                 dosagem, fabricante, lote, quantidade,
-                 validade, preco
-             ) = valores
+        conn = sqlite3.connect("saracaFarma.db")
+        cursor = conn.cursor()
+        erros = []
+        for item in tree.get_children():
+            valores = tree.item(item)["values"]
+            try:
+                (
+                    codigo_barras, nome, categoria, apresentacao,
+                    dosagem, fabricante, lote, quantidade,
+                    validade, preco_custo, preco_venda
+                ) = valores
 
-             # --- limpeza e conversão segura ---
-             codigo_barras = str(codigo_barras).strip()
-             nome = str(nome).strip()
-             categoria = str(categoria).strip()
-             apresentacao = str(apresentacao).strip()
-             dosagem = str(dosagem).strip()
-             fabricante = str(fabricante).strip()
-             lote = str(lote).strip()
-             validade = str(validade).strip()
+                codigo_barras = str(codigo_barras).strip()
+                nome = str(nome).strip()
+                categoria = str(categoria).strip()
+                apresentacao = str(apresentacao).strip()
+                dosagem = str(dosagem).strip()
+                fabricante = str(fabricante).strip()
+                lote = str(lote).strip()
+                validade = str(validade).strip()
+                quantidade = int(str(quantidade).strip()) if quantidade else 0
+                preco_venda = float(str(preco_venda).replace(",", ".").strip()) if preco_venda else 0.0
 
-             # quantidade e preço tratados
-             quantidade = int(str(quantidade).strip()) if quantidade else 0
-             preco = float(str(preco).replace(",", ".").strip()) if preco else 0.0
+                # cadastra produto se não existir
+                cursor.execute("SELECT * FROM Produto WHERE codigo_barras = ?", (codigo_barras,))
+                produto = cursor.fetchone()
+                if not produto:
+                    cursor.execute("""
+                        INSERT INTO Produto (codigo_barras, nome, categoria, apresentacao, dosagem, fabricante)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    """, (codigo_barras, nome, categoria, apresentacao, dosagem, fabricante))
 
-             # cadastra produto se não existir
-             cursor.execute("SELECT * FROM Produto WHERE codigo_barras = ?", (codigo_barras,))
-             produto = cursor.fetchone()
-             if not produto:
-                 cursor.execute("""
-                     INSERT INTO Produto (codigo_barras, nome, categoria, apresentacao, dosagem, fabricante)
-                     VALUES (?, ?, ?, ?, ?, ?)
-                 """, (codigo_barras, nome, categoria, apresentacao, dosagem, fabricante))
+                # cadastra lote (usando preco_venda, não preco_custo)
+                cursor.execute("""
+                    INSERT INTO LoteProduto (codigo_barras, lote, quantidade, validade, preco)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (codigo_barras, lote, quantidade, validade, preco_venda))
 
-             # cadastra lote
-             cursor.execute("""
-                 INSERT INTO LoteProduto (codigo_barras, lote, quantidade, validade, preco)
-                 VALUES (?, ?, ?, ?, ?)
-             """, (codigo_barras, lote, quantidade, validade, preco))
+            except Exception as e:
+                erros.append(f"{nome}: {e}")
 
-         except Exception as e:
-             erros.append(f"{nome}: {e}")
+        conn.commit()
+        conn.close()
 
-     conn.commit()
-     conn.close()
-
-     if erros:
-         status_label.config(text=f"Erros ao salvar: {', '.join(erros)}", foreground="red")
-     else:
-         status_label.config(text="Todos os produtos foram cadastrados com sucesso!", foreground="green")
-         # limpa a treeview após salvar
-         for item in tree.get_children():
-             tree.delete(item)
-
+        if erros:
+            status_label.config(text=f"Erros ao salvar: {', '.join(erros)}", foreground="red")
+        else:
+            status_label.config(text="Todos os produtos foram cadastrados com sucesso!", foreground="green")
+            for item in tree.get_children():
+                tree.delete(item)
 
     # --- Botões ---
     botoes_frame = tk.Frame(janela)
     botoes_frame.pack(fill="x", pady=10)
 
-    ttk.Button(botoes_frame, text="Selecionar Arquivo CSV", command=importar_csv).pack(side="left", padx=10)
+    ttk.Button(botoes_frame, text="Selecionar Arquivo Fornecedor", command=importar_csv).pack(side="left", padx=10)
     ttk.Button(botoes_frame, text="Salvar Todos", command=salvar_todos).pack(side="left", padx=10)
+    ttk.Button(botoes_frame, text="Editar Produto", command=editar_produto).pack(side="left", padx=10)
 
-
-
+    # Botões para aplicar margem
+    ttk.Button(botoes_frame, text="Definir Margem de Lucro", command=definir_margem).pack(side="left", padx=10)
 
 
 def normalizar_preco(valor):
@@ -471,7 +533,6 @@ def normalizar_preco(valor):
     except:
         raise ValueError("Preço inválido. Use o formato 5.20")
 
-
 def validar_quantidade(valor):
     try:
         valor = valor.replace(",", ".")
@@ -480,6 +541,4 @@ def validar_quantidade(valor):
         return int(valor)
     except:
         raise ValueError("Quantidade inválida. Use apenas números inteiros (ex: 10)")
-
-
 
