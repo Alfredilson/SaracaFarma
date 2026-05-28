@@ -4,7 +4,8 @@ import sqlite3
 from admin import abrir_funcoes_admin
 from produto import cadastrar_produto
 from produto import cadastrar_produtos_treeview 
-from produto import cadastrar_produtos_csv
+#---from produto import cadastrar_produtos_csv
+from produto import cadastrar_produtos_fornecedor
 from tkinter import filedialog
 
 def cadastrar_lista_produtos():
@@ -33,7 +34,8 @@ def tela_principal(perfil):
     #Chamada direta da função de cadastro de produto.
     menu_cadastro.add_command(label="Cadastro Individual", command=cadastrar_produto)
     menu_cadastro.add_command(label="Cadastro em Lote (Treeview)", command=cadastrar_produtos_treeview)
-    menu_cadastro.add_command(label="Cadastro em Lote (CSV)", command=cadastrar_produtos_csv)
+    #---menu_cadastro.add_command(label="Cadastro em Lote (CSV)", command=cadastrar_produtos_csv)
+    menu_cadastro.add_command(label="Cadastro em Lote via Fornecedor", command=cadastrar_produtos_fornecedor)
 
 
     menubar.add_cascade(label="Cadastro", menu=menu_cadastro)
