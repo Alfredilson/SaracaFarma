@@ -174,7 +174,12 @@ def cadastrar_produtos_treeview():
     for i, label in enumerate(labels):
         ttk.Label(form_frame, text=label+":").grid(row=i, column=0, sticky="e", padx=5, pady=3)
         if label == "Categoria":
-            entry = ttk.Combobox(form_frame, values=["Medicamento", "Armarinho"], state="readonly", width=30)
+           entry = ttk.Combobox(
+              form_frame,
+              values=["Medicamento", "Armarinho", "Cosmético", "Perfume", "Higiene"],
+              state="readonly",
+             width=30
+            )
         else:
             entry = ttk.Entry(form_frame, width=32)
         entry.grid(row=i, column=1, padx=5, pady=3)
@@ -295,6 +300,10 @@ def cadastrar_produtos_treeview():
             status_label.config(text=f"Erros ao salvar: {', '.join(erros)}", foreground="red")
         else:
             status_label.config(text="Todos os produtos foram cadastrados com sucesso!", foreground="green")
+            # limpa a treeview após salvar
+            for item in tree.get_children():
+             tree.delete(item)
+
 
     def editar_produto():
      selecionado = tree.selection()
@@ -347,29 +356,101 @@ def cadastrar_produtos_csv():
     janela.title("Cadastro em Lote - CSV")
     janela.state("zoomed")  # abre maximizada
 
+    status_label = ttk.Label(janela, text="", foreground="green")
+    status_label.pack(pady=5)
+
+    # --- Treeview para exibir produtos importados ---
+    colunas = ("codigo_barras", "nome", "categoria", "apresentacao", "dosagem", "fabricante", "lote", "quantidade", "validade", "preco")
+    tree = ttk.Treeview(janela, columns=colunas, show="headings")
+
+    for col in colunas:
+        tree.heading(col, text=col.capitalize())
+        tree.column(col, width=120)
+
+    tree.pack(fill="both", expand=True, pady=10)
+
     def importar_csv():
         arquivo = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
         if not arquivo:
             return
         try:
-            conn = sqlite3.connect("saracaFarma.db")
-            cursor = conn.cursor()
             with open(arquivo, newline="", encoding="utf-8") as f:
                 reader = csv.reader(f)
                 next(reader)  # pula cabeçalho
                 for row in reader:
-                    cursor.execute("""
-                        INSERT INTO Produto (codigo_barras, nome, categoria, apresentacao, dosagem, fabricante, validade, preco, quantidade)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, row)
-            conn.commit()
-            conn.close()
-            messagebox.showinfo("Sucesso", "Produtos importados com sucesso!")
-            janela.destroy()
-        except Exception as e:
-            messagebox.showerror("Erro", f"Erro ao importar CSV.\n{e}")
+                    tree.insert("", tk.END, values=row)
 
-    ttk.Button(janela, text="Selecionar Arquivo CSV", command=importar_csv).pack(pady=20)
+            status_label.config(text="Produtos importados para edição!", foreground="green")
+
+        except Exception as e:
+            status_label.config(text=f"Erro ao importar CSV: {e}", foreground="red")
+
+    def salvar_todos():
+     conn = sqlite3.connect("saracaFarma.db")
+     cursor = conn.cursor()
+     erros = []
+     for item in tree.get_children():
+         valores = tree.item(item)["values"]
+         try:
+             (
+                 codigo_barras, nome, categoria, apresentacao,
+                 dosagem, fabricante, lote, quantidade,
+                 validade, preco
+             ) = valores
+
+             # --- limpeza e conversão segura ---
+             codigo_barras = str(codigo_barras).strip()
+             nome = str(nome).strip()
+             categoria = str(categoria).strip()
+             apresentacao = str(apresentacao).strip()
+             dosagem = str(dosagem).strip()
+             fabricante = str(fabricante).strip()
+             lote = str(lote).strip()
+             validade = str(validade).strip()
+
+             # quantidade e preço tratados
+             quantidade = int(str(quantidade).strip()) if quantidade else 0
+             preco = float(str(preco).replace(",", ".").strip()) if preco else 0.0
+
+             # cadastra produto se não existir
+             cursor.execute("SELECT * FROM Produto WHERE codigo_barras = ?", (codigo_barras,))
+             produto = cursor.fetchone()
+             if not produto:
+                 cursor.execute("""
+                     INSERT INTO Produto (codigo_barras, nome, categoria, apresentacao, dosagem, fabricante)
+                     VALUES (?, ?, ?, ?, ?, ?)
+                 """, (codigo_barras, nome, categoria, apresentacao, dosagem, fabricante))
+
+             # cadastra lote
+             cursor.execute("""
+                 INSERT INTO LoteProduto (codigo_barras, lote, quantidade, validade, preco)
+                 VALUES (?, ?, ?, ?, ?)
+             """, (codigo_barras, lote, quantidade, validade, preco))
+
+         except Exception as e:
+             erros.append(f"{nome}: {e}")
+
+     conn.commit()
+     conn.close()
+
+     if erros:
+         status_label.config(text=f"Erros ao salvar: {', '.join(erros)}", foreground="red")
+     else:
+         status_label.config(text="Todos os produtos foram cadastrados com sucesso!", foreground="green")
+         # limpa a treeview após salvar
+         for item in tree.get_children():
+             tree.delete(item)
+
+
+    # --- Botões ---
+    botoes_frame = tk.Frame(janela)
+    botoes_frame.pack(fill="x", pady=10)
+
+    ttk.Button(botoes_frame, text="Selecionar Arquivo CSV", command=importar_csv).pack(side="left", padx=10)
+    ttk.Button(botoes_frame, text="Salvar Todos", command=salvar_todos).pack(side="left", padx=10)
+
+
+
 
 
 def normalizar_preco(valor):
