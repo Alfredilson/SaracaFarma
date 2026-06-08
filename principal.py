@@ -7,6 +7,7 @@ from produto import cadastrar_produtos_treeview
 #---from produto import cadastrar_produtos_csv
 from produto import cadastrar_produtos_fornecedor
 from tkinter import filedialog
+from controle_estoque import tela_estoque, tela_relatorio
 
 def cadastrar_lista_produtos():
     # Função placeholder para cadastro em lote
@@ -32,17 +33,19 @@ def tela_principal(perfil):
       # Menu Cadastro
     menu_cadastro = tk.Menu(menubar, tearoff=0)
     #Chamada direta da função de cadastro de produto.
-    menu_cadastro.add_command(label="Cadastro Individual", command=cadastrar_produto)
-    menu_cadastro.add_command(label="Cadastro em Lote (Treeview)", command=cadastrar_produtos_treeview)
-    #---menu_cadastro.add_command(label="Cadastro em Lote (CSV)", command=cadastrar_produtos_csv)
-    menu_cadastro.add_command(label="Cadastro em Lote via Fornecedor", command=cadastrar_produtos_fornecedor)
+    menu_cadastro.add_command(label="Cadastro Individual", command=lambda: cadastrar_produto(perfil))
+    menu_cadastro.add_command(label="Cadastro em Lote (Treeview)", command=lambda: cadastrar_produtos_treeview(perfil))
+    #---menu_cadastro.add_command(label="Cadastro em Lote (CSV)", command=lambda: cadastrar_produtos_csv(perfil))
+    menu_cadastro.add_command(label="Cadastro em Lote via Fornecedor", command=lambda: cadastrar_produtos_fornecedor(perfil))
 
 
     menubar.add_cascade(label="Cadastro", menu=menu_cadastro)
 
      # Menu Estoque
     menu_estoque = tk.Menu(menubar, tearoff=0)
-    menu_estoque.add_command(label="Controle de Estoque", command=lambda: messagebox.showinfo("Estoque", "Controle de Estoque"))
+    menu_estoque.add_command(label="Controle de Estoque", command=lambda: tela_estoque(perfil)) # Placeholder para função de relatório
+    menu_estoque.add_command(label="Controlar Relatorio", command=tela_relatorio) # Placeholder para função de relatório
+    menu_estoque.add_command(label="Consultar Saldo",)
     menubar.add_cascade(label="Estoque", menu=menu_estoque)
 
     # Menu Administração (somente se perfil for admin)
