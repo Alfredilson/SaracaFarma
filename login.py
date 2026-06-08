@@ -44,6 +44,8 @@ def validar_login():
     else:
         messagebox.showerror("Erro", "Usuário ou senha inválidos.")
 
+
+
 # Tela de login
 root = tk.Tk()
 root.title("SaracaFarma - Login")
