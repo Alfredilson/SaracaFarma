@@ -1,9 +1,10 @@
+from datetime import datetime
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import sqlite3
 import csv
 import uuid
-from datetime import datetime
+from datetime import date
 
 def normalizar_data(data_str):
     formatos = ["%Y-%m-%d", "%Y/%m/%d", "%d/%m/%Y", "%d-%m-%Y"]
@@ -16,7 +17,7 @@ def normalizar_data(data_str):
     raise ValueError("Formato de data inválido")
 
 # --- CADASTRO INDIVIDUAL ---
-def cadastrar_produto():
+def cadastrar_produto(perfil):
     janela = tk.Toplevel()
     janela.title("Cadastro de Produto")
     janela.state("zoomed")  # abre maximizada
@@ -98,6 +99,7 @@ def cadastrar_produto():
      apresentacao = entry_apresentacao.get().strip()
      dosagem = entry_dosagem.get().strip()
      fabricante = entry_fabricante.get().strip()
+     data_atual = date.today().strftime("%Y-%m-%d")
      try:
       validade = normalizar_data(entry_validade.get().strip())
      except ValueError:
@@ -123,6 +125,11 @@ def cadastrar_produto():
             INSERT INTO LoteProduto (codigo_barras, lote, quantidade, validade, preco)
             VALUES (?, ?, ?, ?, ?)
         """, (codigo, lote, quantidade, validade, preco))
+
+        cursor.execute("""
+            INSERT INTO MovimentacaoEstoque (codigo_barras, lote, tipo, quantidade, data, id_usuario)
+            VALUES (?, ?, 'entrada', ?, ?, ?)
+        """, (codigo, lote, quantidade, data_atual, perfil))
 
         conn.commit()
 
@@ -152,7 +159,7 @@ def cadastrar_produto():
     ttk.Button(janela, text="Salvar", command=salvar_produto).pack(pady=20)
 
 # --- CADASTRO EM LOTE VIA TREEVIEW ---
-def cadastrar_produtos_treeview():
+def cadastrar_produtos_treeview(perfil):
     janela = tk.Toplevel()
     janela.title("Cadastro em Lote - Treeview")
     janela.state("zoomed")  # abre maximizada
@@ -286,6 +293,10 @@ def cadastrar_produtos_treeview():
                     INSERT INTO LoteProduto (codigo_barras, lote, quantidade, validade, preco)
                     VALUES (?, ?, ?, ?, ?)
                 """, (codigo, lote, int(quantidade), validade, float(preco)))
+                cursor.execute("""
+                    INSERT INTO MovimentacaoEstoque (codigo_barras, lote, tipo, quantidade, data, id_usuario)
+                    VALUES (?, ?, 'entrada', ?, ?, ?)
+                """, (codigo, lote, int(quantidade), date.today(), perfil))
 
             except Exception as e:
                 erros.append(f"{nome}: {e}")
@@ -346,7 +357,7 @@ def cadastrar_produtos_treeview():
     entries["Código de Barras"].bind("<Return>", lambda event: buscar_produto_por_codigo())
 
 #--- CADASTRO EM LOTE VIA CSV DO FORNECEDOR (COM PREÇO DE CUSTO E VENDA) ---
-def cadastrar_produtos_fornecedor():
+def cadastrar_produtos_fornecedor(perfil):
     janela = tk.Toplevel()
     janela.title("Cadastro via Fornecedor - CSV")
     janela.state("zoomed")
@@ -489,6 +500,10 @@ def cadastrar_produtos_fornecedor():
                     INSERT INTO LoteProduto (codigo_barras, lote, quantidade, validade, preco)
                     VALUES (?, ?, ?, ?, ?)
                 """, (codigo_barras, lote, quantidade, validade, preco_venda))
+                cursor.execute("""
+                    INSERT INTO MovimentacaoEstoque (codigo_barras, lote, tipo, quantidade, data, id_usuario)
+                    VALUES (?, ?, 'entrada', ?, ?, ?)
+                """, (codigo_barras, lote, quantidade, date.today(), perfil))
 
             except Exception as e:
                 erros.append(f"{nome}: {e}")
