@@ -39,10 +39,34 @@ CREATE TABLE IF NOT EXISTS Venda (
     FOREIGN KEY (id_produto) REFERENCES Produto(id_produto)
 );
 
+CREATE TABLE IF NOT EXISTS ItensVenda (
+    id_item INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_venda INTEGER NOT NULL,
+    codigo_barras TEXT NOT NULL,
+    lote TEXT NOT NULL,
+    quantidade INTEGER NOT NULL,
+    preco_unitario REAL NOT NULL,
+    subtotal REAL NOT NULL,
+    FOREIGN KEY (id_venda) REFERENCES Venda(id_venda),
+    FOREIGN KEY (codigo_barras) REFERENCES Produto(codigo_barras)
+);
+
 
 CREATE TABLE IF NOT EXISTS Relatorio (
     id_relatorio INTEGER PRIMARY KEY AUTOINCREMENT,
     tipo TEXT CHECK(tipo IN ('vendas','estoque')) NOT NULL,
     periodo TEXT,
     data_geracao DATE NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS MovimentacaoEstoque (
+    id_mov INTEGER PRIMARY KEY AUTOINCREMENT,
+    codigo_barras TEXT NOT NULL,
+    lote TEXT NOT NULL,
+    tipo TEXT CHECK(tipo IN ('entrada','baixa')) NOT NULL,
+    quantidade INTEGER NOT NULL,
+    data DATE NOT NULL,
+    id_usuario INTEGER,
+    FOREIGN KEY (codigo_barras) REFERENCES Produto(codigo_barras),
+    FOREIGN KEY (id_usuario) REFERENCES Usuario(id_usuario)
 );
