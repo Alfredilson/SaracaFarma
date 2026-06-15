@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import ttk
 from produto import cadastrar_produto, cadastrar_produtos_fornecedor
 import datetime
+from tkcalendar import DateEntry
 
 # Função para consultar o estoque e atualizar a Treeview
 def consultar_estoque(tree, status_label):
@@ -181,17 +182,17 @@ def tela_relatorio():
     janela = tk.Toplevel()
     janela.title("Relatório de Movimentações")
 
-    tk.Label(janela, text="Data Inicial (YYYY-MM-DD)").grid(row=0, column=0)
-    entry_data_inicial = tk.Entry(janela)
+    tk.Label(janela, text="Data Inicial").grid(row=0, column=0)
+    entry_data_inicial = DateEntry(janela, date_pattern="yyyy-mm-dd")
     entry_data_inicial.grid(row=0, column=1)
 
-    tk.Label(janela, text="Data Final (YYYY-MM-DD)").grid(row=1, column=0)
-    entry_data_final = tk.Entry(janela)
+    tk.Label(janela, text="Data Final").grid(row=1, column=0)
+    entry_data_final = DateEntry(janela, date_pattern="yyyy-mm-dd")
     entry_data_final.grid(row=1, column=1)
 
-    tk.Label(janela, text="Usuário (ID)").grid(row=2, column=0)
-    entry_usuario = tk.Entry(janela)
-    entry_usuario.grid(row=2, column=1)
+    #tk.Label(janela, text="Usuário (ID)").grid(row=2, column=0)
+    #entry_usuario = tk.Entry(janela)
+    #entry_usuario.grid(row=2, column=1)
 
     tree = ttk.Treeview(janela, show="headings")
     tree.grid(row=4, column=0, columnspan=2)
