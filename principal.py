@@ -206,6 +206,13 @@ def adicionar_item(tree_venda):
     entry_busca = ttk.Entry(janela, width=40)
     entry_busca.pack(pady=5)
 
+    # Permitir busca automática ao pressionar Enter (leitor de código de barras)
+    entry_busca.bind("<Return>", lambda event: buscar_produto())
+
+    # Foco automático no campo ao abrir a janela
+    entry_busca.focus_set()
+
+
     #Permitir busca aotomatica ao precionar enter (leitor codigo de barras)
     entry_busca.bind("<Return>", lambda event: buscar_produto())
 
@@ -344,5 +351,4 @@ def remover_item(tree_venda):
             atualizar_total(tree_venda, label_total)
     else:
         messagebox.showwarning("Atenção", "Selecione um item para remover!")
-
 
