@@ -329,4 +329,12 @@ def atualizar_total(tree_venda, total_label):
         total += subtotal
     total_label.config(text=f"Total: R$ {total:.2f}")
 
+def remover_item(tree_venda):
+    selecionado = tree_venda.selection()
+    if selecionado:
+        tree_venda.delete(selecionado)
+        # Atualiza o total da venda depois de remover
+        atualizar_total(tree_venda, label_total)
+    else:
+        messagebox.showwarning("Atenção", "Selecione um item para remover!")
 
