@@ -332,9 +332,17 @@ def atualizar_total(tree_venda, total_label):
 def remover_item(tree_venda):
     selecionado = tree_venda.selection()
     if selecionado:
-        tree_venda.delete(selecionado)
-        # Atualiza o total da venda depois de remover
-        atualizar_total(tree_venda, label_total)
+        valores = tree_venda.item(selecionado, "values")
+        nome_produto = valores[1]  # coluna do nome (ajuste se necessário)
+
+        resposta = messagebox.askyesno(
+            "Confirmação",
+            f"Deseja realmente remover {nome_produto} da lista?"
+        )
+        if resposta:
+            tree_venda.delete(selecionado)
+            atualizar_total(tree_venda, label_total)
     else:
         messagebox.showwarning("Atenção", "Selecione um item para remover!")
+
 
