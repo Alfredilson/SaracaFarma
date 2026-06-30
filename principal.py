@@ -129,6 +129,13 @@ def tela_principal(perfil):
         tree_venda.heading(col, text=nomes_colunas[col])
     tree_venda.pack(fill="both", expand=True)
 
+
+    # Label para mostrar o total da venda
+    global label_total
+    label_total = tk.Label(frame_vendas, text="Total: R$ 0.00", font=("Arial", 14, "bold"), bg="#cce6ff")
+    label_total.pack(pady=10)
+
+
     # Botões de ação
     botoes = tk.Frame(frame_vendas, bg="#cce6ff")
     botoes.pack(pady=10)
@@ -304,11 +311,22 @@ def adicionar_item(tree_venda):
 
             tree_venda.insert("", "end", values=(codigo, nome, dosagem, lote, quantidade_venda, preco_unitario, subtotal))
             janela.destroy()
+
+            # Atualizar o total da venda
+            atualizar_total(tree_venda, label_total)
+
+
         except ValueError:
             messagebox.showerror("Erro", "Informe uma quantidade válida!")
 
     ttk.Button(janela, text="Adicionar", width=20, command=salvar_item).pack(pady=10)
 
-
+#função para atualizar o total da venda
+def atualizar_total(tree_venda, total_label):
+    total = 0.0
+    for item in tree_venda.get_children():
+        subtotal = float(tree_venda.item(item, "values")[6])  # índice 6 é o subtotal
+        total += subtotal
+    total_label.config(text=f"Total: R$ {total:.2f}")
 
 
