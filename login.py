@@ -3,6 +3,7 @@ from tkinter import ttk, messagebox
 import sqlite3
 from principal import tela_principal   # importa a tela principal
 import os
+from db import conexao, cursor
 
 def inicializar_banco():
     db_file = "saracaFarma.db"
@@ -32,11 +33,8 @@ def inicializar_banco():
 def validar_login():
     usuario = entry_usuario.get()
     senha = entry_senha.get()
-    conn = sqlite3.connect("saracaFarma.db")
-    cursor = conn.cursor()
     cursor.execute("SELECT perfil FROM Usuario WHERE login=? AND senha=?", (usuario, senha))
     result = cursor.fetchone()
-    conn.close()
     if result:
         perfil = result[0]
         root.destroy()          #Fecha a tela de login
