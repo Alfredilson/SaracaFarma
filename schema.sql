@@ -27,6 +27,14 @@ CREATE TABLE IF NOT EXISTS LoteProduto (
     FOREIGN KEY (codigo_barras) REFERENCES Produto(codigo_barras)
 );
 
+CREATE TABLE IF NOT EXISTS Cliente (
+    id_cliente INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome TEXT NOT NULL,
+    cpf TEXT UNIQUE,
+    telefone TEXT,
+    email TEXT,
+    endereco TEXT
+);
 
 CREATE TABLE IF NOT EXISTS Venda (
     id_venda INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -35,8 +43,11 @@ CREATE TABLE IF NOT EXISTS Venda (
     id_produto INTEGER NOT NULL,
     quantidade INTEGER NOT NULL,
     valor_total REAL NOT NULL,
+    forma_pagamento TEXT CHECK(forma_pagamento IN ('dinheiro','cartao_credito','cartao_debito','fiado','pix')) NOT NULL DEFAULT 'dinheiro',
+    id_cliente INTEGER,
     FOREIGN KEY (id_usuario) REFERENCES Usuario(id_usuario),
-    FOREIGN KEY (id_produto) REFERENCES Produto(id_produto)
+    FOREIGN KEY (id_produto) REFERENCES Produto(codigo_barras),
+    FOREIGN KEY (id_cliente) REFERENCES Cliente(id_cliente)
 );
 
 CREATE TABLE IF NOT EXISTS ItensVenda (
@@ -50,7 +61,6 @@ CREATE TABLE IF NOT EXISTS ItensVenda (
     FOREIGN KEY (id_venda) REFERENCES Venda(id_venda),
     FOREIGN KEY (codigo_barras) REFERENCES Produto(codigo_barras)
 );
-
 
 CREATE TABLE IF NOT EXISTS Relatorio (
     id_relatorio INTEGER PRIMARY KEY AUTOINCREMENT,
