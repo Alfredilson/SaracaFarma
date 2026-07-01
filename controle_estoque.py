@@ -4,6 +4,7 @@ from tkinter import ttk
 from produto import cadastrar_produto, cadastrar_produtos_fornecedor
 import datetime
 from tkcalendar import DateEntry
+from db import conexao, cursor
 
 # Função para consultar o estoque e atualizar a Treeview
 def consultar_estoque(tree, status_label):
@@ -107,8 +108,6 @@ def baixa_estoque(tree, status_label, id_usuario=None):
     ttk.Button(janela_baixa, text="Confirmar", command=confirmar_baixa).pack(pady=10)
 
 def consultar_saldo(tree):
-    conn = sqlite3.connect("saracaFarma.db")
-    cursor = conn.cursor()
 
     query = """
         SELECT codigo_barras, lote,
@@ -133,11 +132,10 @@ def consultar_saldo(tree):
     for row in resultados:
         tree.insert("", "end", values=row)
 
-    conn.close()
+    
 
 def consultar_relatorio(tree, entry_data_inicial, entry_data_final, entry_usuario):
-    conn = sqlite3.connect("saracaFarma.db")
-    cursor = conn.cursor()
+   
 
     data_inicial = entry_data_inicial.get().strip()
     data_final = entry_data_final.get().strip()
