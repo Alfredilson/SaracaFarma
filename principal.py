@@ -10,8 +10,7 @@ from produto import cadastrar_produtos_fornecedor
 from tkinter import filedialog
 from controle_estoque import tela_estoque, tela_relatorio
 import datetime
-
-
+from db import conexao, cursor
 
 
 def cadastrar_lista_produtos():
@@ -166,9 +165,7 @@ def tela_principal(perfil):
              command=lambda: remover_item(tree_venda)).pack(side="left", padx=5)
 
     tk.Button(frame_botoes, text="Finalizar Venda", bg="#0066cc", fg="white",
-          command=lambda: finalizar_venda(tree_venda, perfil)).pack(side="left", padx=5)
-
-
+          command=lambda: escolher_pagamento(tree_venda, perfil)).pack(side="left", padx=5)
 
     principal.mainloop()
 
@@ -188,12 +185,9 @@ def verificar_admin():
     entry_senha.pack(pady=5)
 
     def validar_admin():
-        conn = sqlite3.connect("saracaFarma.db")
-        cursor = conn.cursor()
         cursor.execute("SELECT * FROM Usuario WHERE login=? AND senha=? AND perfil='admin'", 
                        (entry_login.get(), entry_senha.get()))
         result = cursor.fetchone()
-        conn.close()
         if result:
             messagebox.showinfo("Sucesso", "Acesso administrativo liberado!")
             abrir_funcoes_admin()
@@ -217,8 +211,6 @@ def adicionar_item(tree_venda):
 
     quantidade = int(quantidade)
 
-    conn = sqlite3.connect("saracaFarma.db")
-    cursor = conn.cursor()
     cursor.execute("""
       SELECT p.nome, p.dosagem, lp.lote, lp.preco
         FROM LoteProduto lp
@@ -274,10 +266,10 @@ def remover_item(tree_venda):
     else:
         messagebox.showwarning("Atenção", "Selecione um item para remover!")
 
-def finalizar_venda(tree_venda, id_usuario):
-    conexao = sqlite3.connect("saracaFarma.db")
-    cursor = conexao.cursor()
-    
+def finalizar_venda(tree_venda, perfil, forma_pagamento, janela_pagamento=None):
+
+    cursor = sqlite3.connect("saracaFarma.db").cursor()
+
     if not tree_venda.get_children():
         messagebox.showwarning("Atenção", "Nenhum item na venda!")
         return
@@ -288,42 +280,38 @@ def finalizar_venda(tree_venda, id_usuario):
     for item in tree_venda.get_children():
         valores = tree_venda.item(item, "values")
         codigo_barras = valores[0]
-        nome = valores[1]
-        lote = valores[3]
         quantidade = int(valores[4])
         preco_unitario = float(valores[5])
         subtotal = float(valores[6])
-
         total += subtotal
-        itens_venda.append((codigo_barras, lote, quantidade, preco_unitario, subtotal))
+        itens_venda.append((codigo_barras, quantidade, preco_unitario, subtotal))
 
-        # Dá baixa no estoque
-        cursor.execute(
-            "UPDATE LoteProduto SET quantidade = quantidade - ? WHERE codigo_barras = ? AND lote = ?",
-            (quantidade, codigo_barras, lote)
-        )
+        # Atualiza estoque
+        cursor.execute("UPDATE LoteProduto SET quantidade = quantidade - ? WHERE codigo_barras = ?", (quantidade, codigo_barras))
 
-    # Registra a venda principal
-    cursor.execute(
-        "INSERT INTO Venda (data, id_usuario, id_produto, quantidade, valor_total) VALUES (datetime('now'), ?, ?, ?, ?)",
-        (id_usuario, itens_venda[0][0], itens_venda[0][2], total)  # usa o primeiro produto como referência
-    )
+    # Registra venda com forma de pagamento
+    cursor.execute("INSERT INTO Venda (data, id_usuario, id_produto, quantidade, valor_total) VALUES (datetime('now'), ?, ?, ?, ?)",
+                   (perfil, itens_venda[0][0], itens_venda[0][1], total))
     id_venda = cursor.lastrowid
 
-    # Registra os itens da venda
-    for codigo_barras, lote, quantidade, preco_unitario, subtotal in itens_venda:
-        cursor.execute(
-            "INSERT INTO ItensVenda (id_venda, codigo_barras, lote, quantidade, preco_unitario, subtotal) VALUES (?, ?, ?, ?, ?, ?)",
-            (id_venda, codigo_barras, lote, quantidade, preco_unitario, subtotal)
-        )
+    # Registra itens
+    for codigo_barras, quantidade, preco_unitario, subtotal in itens_venda:
+        cursor.execute("INSERT INTO ItensVenda (id_venda, codigo_barras, lote, quantidade, preco_unitario, subtotal) VALUES (?, ?, '', ?, ?, ?)",
+                       (id_venda, codigo_barras, quantidade, preco_unitario, subtotal))
 
     conexao.commit()
 
-    resumo = "\n".join([f"{qtd}x {codigo} - R$ {subtotal:.2f}" for (codigo, _, qtd, _, subtotal) in itens_venda])
-    messagebox.showinfo("Venda Finalizada", f"Resumo da venda:\n\n{resumo}\n\nTotal: R$ {total:.2f}")
+    resumo = "\n".join([f"{qtd}x {codigo} - R$ {subtotal:.2f}" for (codigo, qtd, _, subtotal) in itens_venda])
+    messagebox.showinfo("Venda Finalizada", f"Resumo da venda:\n\n{resumo}\n\nTotal: R$ {total:.2f}\nPagamento: {forma_pagamento}")
 
+    # Fecha janela de pagamento
+    if janela_pagamento:
+        janela_pagamento.destroy()
+
+    # Limpa tela
     tree_venda.delete(*tree_venda.get_children())
     label_total.config(text="Total: R$ 0.00")
+
 
 def preencher_campos(event):
     selecionado = tree_venda.selection()
@@ -341,3 +329,92 @@ def preencher_campos(event):
 
 def foco_quantidade(event=None):
     entry_quantidade.focus_set()
+
+def escolher_pagamento(tree_venda, perfil):
+    # Janela popup
+    janela_pagamento = tk.Toplevel()
+    janela_pagamento.title("Forma de Pagamento")
+    janela_pagamento.geometry("300x250")
+    janela_pagamento.configure(bg="#cce6ff")
+
+    tk.Label(janela_pagamento, text="Selecione a forma de pagamento:", 
+             font=("Segoe UI", 12, "bold"), bg="#cce6ff").pack(pady=10)
+
+    forma_pagamento = tk.StringVar(value="dinheiro")
+
+    # Opções
+    tk.Radiobutton(janela_pagamento, text="Dinheiro", variable=forma_pagamento, value="dinheiro", bg="#cce6ff").pack(anchor="w", padx=20)
+    tk.Radiobutton(janela_pagamento, text="Cartão Crédito", variable=forma_pagamento, value="cartao_credito", bg="#cce6ff").pack(anchor="w", padx=20)
+    tk.Radiobutton(janela_pagamento, text="Cartão Débito", variable=forma_pagamento, value="cartao_debito", bg="#cce6ff").pack(anchor="w", padx=20)
+    tk.Radiobutton(janela_pagamento, text="Fiado (Crédito)", variable=forma_pagamento, value="fiado", bg="#cce6ff").pack(anchor="w", padx=20)
+    tk.Radiobutton(janela_pagamento, text="Pix", variable=forma_pagamento, value="pix", bg="#cce6ff").pack(anchor="w", padx=20)
+
+    # Botão confirmar
+    def confirmar():
+        total = calcular_total(tree_venda)  # função que soma subtotais
+        janela_pagamento.destroy()
+
+        if forma_pagamento.get() == "dinheiro":
+            pagamento_dinheiro(total, perfil, tree_venda)
+        else:
+            finalizar_venda(tree_venda, perfil, forma_pagamento.get())
+
+    tk.Button(janela_pagamento, text="Confirmar", bg="#4CAF50", fg="white",
+              command=confirmar).pack(pady=15)
+
+
+def pagamento_dinheiro(total, perfil, tree_venda):
+    janela_dinheiro = tk.Toplevel()
+    janela_dinheiro.title("Pagamento em Dinheiro")
+    janela_dinheiro.geometry("350x300")
+    janela_dinheiro.configure(bg="#f0f8ff")
+
+    tk.Label(janela_dinheiro, text=f"Total da compra: R$ {total:.2f}", 
+             font=("Segoe UI", 12, "bold"), bg="#f0f8ff").pack(pady=10)
+
+    # Campo para valor recebido
+    tk.Label(janela_dinheiro, text="Valor recebido:", bg="#f0f8ff").pack()
+    entry_valor = ttk.Entry(janela_dinheiro)
+    entry_valor.pack(pady=5)
+
+    # Campo para desconto
+    tk.Label(janela_dinheiro, text="Desconto (R$ ou %):", bg="#f0f8ff").pack()
+    entry_desconto = ttk.Entry(janela_dinheiro)
+    entry_desconto.pack(pady=5)
+
+    resultado_label = tk.Label(janela_dinheiro, text="", bg="#f0f8ff", fg="blue")
+    resultado_label.pack(pady=10)
+
+    def calcular_troco():
+        try:
+            valor_recebido = float(entry_valor.get())
+            desconto = entry_desconto.get().strip()
+
+            # Aplica desconto
+            valor_final = total
+            if desconto.endswith("%"):
+                perc = float(desconto[:-1])
+                valor_final -= (valor_final * perc / 100)
+            elif desconto:
+                valor_final -= float(desconto)
+
+            troco = valor_recebido - valor_final
+            if troco < 0:
+                resultado_label.config(text=f"Valor insuficiente! Faltam R$ {-troco:.2f}", fg="red")
+            else:
+                resultado_label.config(text=f"Troco: R$ {troco:.2f}", fg="green")
+                # Aqui chamamos finalizar_venda com forma_pagamento = 'dinheiro'
+                finalizar_venda(tree_venda, perfil, "dinheiro", janela_dinheiro)
+        except ValueError:
+            messagebox.showwarning("Erro", "Digite valores válidos!")
+
+    tk.Button(janela_dinheiro, text="Confirmar Pagamento", bg="#4CAF50", fg="white",
+              command=calcular_troco).pack(pady=15)
+
+def calcular_total(tree_venda):
+    total = 0.0
+    for item in tree_venda.get_children():
+        valores = tree_venda.item(item, "values")
+        subtotal = float(valores[6])  # coluna do subtotal
+        total += subtotal
+    return total
