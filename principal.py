@@ -11,6 +11,9 @@ from tkinter import filedialog
 from controle_estoque import tela_estoque, tela_relatorio
 import datetime
 
+
+
+
 def cadastrar_lista_produtos():
     # Função placeholder para cadastro em lote
     arquivo = filedialog.askopenfilename(title="Selecionar arquivo de produtos", filetypes=[("CSV", "*.csv"), ("Todos", "*")])
@@ -65,9 +68,12 @@ def tela_principal(perfil):
     barra.pack(fill="x")
     tk.Label(barra, text="Tela Principal - SaracaFarma", fg="white", bg="#0066cc", font=("Segoe UI", 14, "bold")).pack(pady=5)
 
+   
+   
     frame = tk.Frame(principal, bg="#cce6ff")
     frame.pack(pady=30)
 
+    
     
     # Associar menu à janela
     principal.config(menu=menubar)
@@ -96,70 +102,71 @@ def tela_principal(perfil):
         font=("Segoe UI", 11, "bold")
 )
 
+   # Frame superior (campos de entrada)
+    frame_campos = tk.Frame(principal, bg="#cce6ff")
+    frame_campos.pack(fill="x", padx=20, pady=10)
 
-    
-      # Frame de vendas
+    #campo para codigo de barras
+    tk.Label(frame_campos, text="Código de Barras:", bg="#cce6ff").pack(side="left", padx=5)
+    global entry_codigo
+    entry_codigo = ttk.Entry(frame_campos, width=20)
+    entry_codigo.pack(side="left", padx=5)
+    entry_codigo.focus_set()
+
+    # 🔑 Quando apertar Enter no código → vai para quantidade
+    entry_codigo.bind("<Return>", lambda event: entry_quantidade.focus_set())
+
+    #campo para quantidade
+    tk.Label(frame_campos, text="Quantidade:", bg="#cce6ff").pack(side="left", padx=5)
+    global entry_quantidade
+    entry_quantidade = ttk.Entry(frame_campos, width=10)
+    entry_quantidade.pack(side="left", padx=5)
+
+    # 🔑 Quando apertar Enter na quantidade → chama adicionar_item
+    entry_quantidade.bind("<Return>", lambda event: adicionar_item(tree_venda))
+
+    # Frame de vendas (Treeview + total)
     frame_vendas = tk.Frame(principal, bg="#cce6ff")
     frame_vendas.pack(fill="both", expand=True, padx=20, pady=20)
 
     tk.Label(frame_vendas, text="Vendas", font=("Segoe UI", 16, "bold"), bg="#cce6ff").pack(pady=10)
 
-    # Treeview de itens da venda
     colunas = ("codigo_barras", "nome", "dosagem", "lote", "quantidade", "preco_unitario", "subtotal")
-
     nomes_colunas = {
-       "codigo_barras": "CÓDIGO DE BARRAS",
-       "nome": "NOME",
-       "dosagem": "DOSAGEM",
-       "lote": "LOTE",
-       "quantidade": "QUANTIDADE",
-       "preco_unitario": "PREÇO UNITÁRIO",
-       "subtotal": "SUBTOTAL"
-   }
+      "codigo_barras": "CÓDIGO DE BARRAS",
+      "nome": "NOME",
+      "dosagem": "DOSAGEM",
+      "lote": "LOTE",
+      "quantidade": "QUANTIDADE",
+      "preco_unitario": "PREÇO UNITÁRIO",
+      "subtotal": "SUBTOTAL"
+    }
+
+    global tree_venda
     tree_venda = ttk.Treeview(frame_vendas, columns=colunas, show="headings")
-    tree_venda.column("codigo_barras", anchor="center", width=150)
-    tree_venda.column("nome", anchor="center", width=200)
-    tree_venda.column("dosagem", anchor="center", width=120)
-    tree_venda.column("lote", anchor="center", width=100)
-    tree_venda.column("quantidade", anchor="center", width=100)
-    tree_venda.column("preco_unitario", anchor="center", width=120)
-    tree_venda.column("subtotal", anchor="center", width=120)
-
     for col in colunas:
-        tree_venda.heading(col, text=nomes_colunas[col])
+      tree_venda.heading(col, text=nomes_colunas[col])
     tree_venda.pack(fill="both", expand=True)
+    tree_venda.bind("<<TreeviewSelect>>", preencher_campos)
 
 
-    # Label para mostrar o total da venda
+    # Label do total
     global label_total
     label_total = tk.Label(frame_vendas, text="Total: R$ 0.00", font=("Arial", 14, "bold"), bg="#cce6ff")
     label_total.pack(pady=10)
 
+    # Frame de botões
+    frame_botoes = tk.Frame(principal, bg="#cce6ff")
+    frame_botoes.pack(pady=10)
 
-    # Botões de ação
-    botoes = tk.Frame(frame_vendas, bg="#cce6ff")
-    botoes.pack(pady=10)
+    tk.Button(frame_botoes, text="Adicionar Item", bg="#4CAF50", fg="white",
+           command=lambda: adicionar_item(tree_venda)).pack(side="left", padx=5)
 
-    tk.Button(botoes, text="Adicionar Item",
-          bg="#4CAF50",        # verde
-          fg="white",          # texto branco
-          activebackground="#45a049",  # cor ao clicar
-          activeforeground="white",
-          command=lambda: adicionar_item(tree_venda)).grid(row=0, column=0, padx=5)
+    tk.Button(frame_botoes, text="Remover Item", bg="#f44336", fg="white",
+             command=lambda: remover_item(tree_venda)).pack(side="left", padx=5)
 
-    tk.Button(botoes, text="Remover Item",
-          bg="#f44336",        # vermelho
-          fg="white",
-          activebackground="#d32f2f",
-          activeforeground="white",
-          command=lambda: remover_item(tree_venda)).grid(row=0, column=1, padx=5)
-
-    tk.Button(botoes, text="Finalizar Venda",
-          bg="#0066cc",        # azul
-          fg="white",
-          activebackground="#004c99",
-          activeforeground="white",
-          command=lambda: finalizar_venda(tree_venda, perfil)).grid(row=0, column=2, padx=5)
+    tk.Button(frame_botoes, text="Finalizar Venda", bg="#0066cc", fg="white",
+          command=lambda: finalizar_venda(tree_venda, perfil)).pack(side="left", padx=5)
 
 
 
@@ -197,136 +204,51 @@ def verificar_admin():
     ttk.Button(janela, text="Entrar", command=validar_admin).pack(pady=10)
 
 def adicionar_item(tree_venda):
-    janela = tk.Toplevel()
-    janela.title("Adicionar Item")
-    janela.geometry("400x500")
-    janela.configure(bg="#cce6ff")
+    codigo = entry_codigo.get().strip()
+    quantidade = entry_quantidade.get().strip()
 
-    tk.Label(janela, text="Digite Nome ou Código:", bg="#cce6ff").pack(pady=5)
-    entry_busca = ttk.Entry(janela, width=40)
-    entry_busca.pack(pady=5)
+    # Validação dos campos
+    if not codigo:
+        messagebox.showwarning("Atenção", "Digite o código de barras antes de adicionar!")
+        return
+    if not quantidade.isdigit():
+        messagebox.showwarning("Atenção", "Digite uma quantidade válida!")
+        return
 
-    # Permitir busca automática ao pressionar Enter (leitor de código de barras)
-    entry_busca.bind("<Return>", lambda event: buscar_produto())
+    quantidade = int(quantidade)
 
-    # Foco automático no campo ao abrir a janela
-    entry_busca.focus_set()
+    conn = sqlite3.connect("saracaFarma.db")
+    cursor = conn.cursor()
+    cursor.execute("""
+      SELECT p.nome, p.dosagem, lp.lote, lp.preco
+        FROM LoteProduto lp
+       JOIN Produto p ON lp.codigo_barras = p.codigo_barras
+        WHERE lp.codigo_barras = ?
+    """, (codigo,))
+    produto = cursor.fetchone()
 
-
-    #Permitir busca aotomatica ao precionar enter (leitor codigo de barras)
-    entry_busca.bind("<Return>", lambda event: buscar_produto())
-
-    # Lista de sugestões
-    lista_sugestoes = tk.Listbox(janela, width=40, height=5)
-    lista_sugestoes.pack(pady=5)
-
-    def atualizar_sugestoes(event):
-        termo = entry_busca.get()
-        lista_sugestoes.delete(0, tk.END)
-
-        conn = sqlite3.connect("saracaFarma.db")
-        cursor = conn.cursor()
-        cursor.execute("SELECT nome, codigo_barras FROM Produto WHERE nome LIKE ? OR codigo_barras LIKE ?", 
-                       (f"%{termo}%", f"%{termo}%"))
-        resultados = cursor.fetchall()
-        conn.close()
-
-        for nome, codigo in resultados:
-            lista_sugestoes.insert(tk.END, f"{nome} - {codigo}")
-
-    entry_busca.bind("<KeyRelease>", atualizar_sugestoes)
-
-    # Função para selecionar sugestão da lista
-    def selecionar_sugestao(event):
-        selecao = lista_sugestoes.get(lista_sugestoes.curselection())
-        termo = selecao.split(" - ")[1]  # pega o código de barras
-        entry_busca.delete(0, tk.END)
-        entry_busca.insert(0, termo)
-        lista_sugestoes.delete(0, tk.END)  # limpa a lista
-        buscar_produto()
-
-    lista_sugestoes.bind("<<ListboxSelect>>", selecionar_sugestao)
-
-    # Campos de exibição
-    entry_codigo = ttk.Entry(janela, width=40)
-    entry_nome = ttk.Entry(janela, width=40)
-    entry_dosagem = ttk.Entry(janela, width=40)
-    entry_lote = ttk.Entry(janela, width=40)
-    entry_preco = ttk.Entry(janela, width=40)
-    entry_qtd_estoque = ttk.Entry(janela, width=40)
-
-    for campo in [entry_codigo, entry_nome, entry_dosagem, entry_lote, entry_preco, entry_qtd_estoque]:
-        campo.pack(pady=3)
-
-    tk.Label(janela, text="Quantidade a vender:", bg="#cce6ff").pack(pady=5)
-    entry_quantidade_venda = ttk.Entry(janela, width=40)
-    entry_quantidade_venda.pack(pady=5)
-
-    def buscar_produto():
-        termo = entry_busca.get()
-        conn = sqlite3.connect("saracaFarma.db")
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT p.codigo_barras, p.nome, p.dosagem, lp.lote, lp.preco, lp.quantidade, lp.validade
-            FROM Produto p
-            JOIN LoteProduto lp ON p.codigo_barras = lp.codigo_barras
-         WHERE p.codigo_barras=? OR p.nome LIKE ?
-        """, (termo, f"%{termo}%"))
-        resultado = cursor.fetchone()
-        conn.close()
-
-        if resultado:
-            codigo, nome, dosagem, lote, preco, qtd, validade = resultado
-            # preencher campos...
-            entry_codigo.delete(0, tk.END); entry_codigo.insert(0, codigo)
-            entry_nome.delete(0, tk.END); entry_nome.insert(0, nome)
-            entry_dosagem.delete(0, tk.END); entry_dosagem.insert(0, dosagem)
-            entry_lote.delete(0, tk.END); entry_lote.insert(0, lote)
-            entry_preco.delete(0, tk.END); entry_preco.insert(0, preco)
-            entry_qtd_estoque.delete(0, tk.END); entry_qtd_estoque.insert(0, qtd)
-
-            # Verificações
-            hoje = datetime.date.today()
-            validade_dt = datetime.datetime.strptime(validade, "%Y-%m-%d").date()
-            aviso = ""
-            if validade_dt < hoje:
-                aviso += "⚠ Produto VENCIDO!\n"
-            elif (validade_dt - hoje).days <= 30:
-                aviso += "⚠ Validade próxima!\n"
-            if qtd == 0:
-                aviso += "⚠ Estoque zerado!\n"
-            elif qtd < 5:
-                aviso += "⚠ Estoque baixo!\n"
-
-            if aviso:
-                messagebox.showwarning("Atenção", aviso)
+    if produto:
+        nome, dosagem, lote, preco = produto
+        subtotal = quantidade * preco
+        
+        selecionado = tree_venda.selection()
+        if selecionado:
+            # Atualiza item existente
+            tree_venda.item(selecionado, values=(codigo, nome, dosagem, lote, quantidade, preco, subtotal))
         else:
-            messagebox.showerror("Erro", "Produto não encontrado!")
+            # Insere novo item
+            tree_venda.insert("", "end", values=(codigo, nome, dosagem, lote, quantidade, preco, subtotal))
 
+        atualizar_total(tree_venda, label_total)
 
-    ttk.Button(janela, text="Buscar", width=20, command=buscar_produto).pack(pady=10)
-
-    def salvar_item():
-        try:
-            codigo = entry_codigo.get()
-            nome = entry_nome.get()
-            dosagem = entry_dosagem.get()
-            lote = entry_lote.get()
-            preco_unitario = float(entry_preco.get())
-            quantidade_venda = int(entry_quantidade_venda.get())
-            subtotal = quantidade_venda * preco_unitario
-
-            tree_venda.insert("", "end", values=(codigo, nome, dosagem, lote, quantidade_venda, preco_unitario, subtotal))
-            janela.destroy()
-
-            # Atualizar o total da venda
-            atualizar_total(tree_venda, label_total)
-
-
-        except ValueError:
-            messagebox.showerror("Erro", "Informe uma quantidade válida!")
-
-    ttk.Button(janela, text="Adicionar", width=20, command=salvar_item).pack(pady=10)
+        # Limpa campos
+        entry_codigo.delete(0, tk.END)
+        entry_quantidade.delete(0, tk.END)
+        entry_codigo.focus_set()
+        # 🔑 Limpa a seleção para permitir novo item
+        tree_venda.selection_remove(tree_venda.selection())
+    else:
+        messagebox.showerror("Erro", "Produto não encontrado!")
 
 #função para atualizar o total da venda
 def atualizar_total(tree_venda, total_label):
@@ -352,3 +274,70 @@ def remover_item(tree_venda):
     else:
         messagebox.showwarning("Atenção", "Selecione um item para remover!")
 
+def finalizar_venda(tree_venda, id_usuario):
+    conexao = sqlite3.connect("saracaFarma.db")
+    cursor = conexao.cursor()
+    
+    if not tree_venda.get_children():
+        messagebox.showwarning("Atenção", "Nenhum item na venda!")
+        return
+
+    total = 0.0
+    itens_venda = []
+
+    for item in tree_venda.get_children():
+        valores = tree_venda.item(item, "values")
+        codigo_barras = valores[0]
+        nome = valores[1]
+        lote = valores[3]
+        quantidade = int(valores[4])
+        preco_unitario = float(valores[5])
+        subtotal = float(valores[6])
+
+        total += subtotal
+        itens_venda.append((codigo_barras, lote, quantidade, preco_unitario, subtotal))
+
+        # Dá baixa no estoque
+        cursor.execute(
+            "UPDATE LoteProduto SET quantidade = quantidade - ? WHERE codigo_barras = ? AND lote = ?",
+            (quantidade, codigo_barras, lote)
+        )
+
+    # Registra a venda principal
+    cursor.execute(
+        "INSERT INTO Venda (data, id_usuario, id_produto, quantidade, valor_total) VALUES (datetime('now'), ?, ?, ?, ?)",
+        (id_usuario, itens_venda[0][0], itens_venda[0][2], total)  # usa o primeiro produto como referência
+    )
+    id_venda = cursor.lastrowid
+
+    # Registra os itens da venda
+    for codigo_barras, lote, quantidade, preco_unitario, subtotal in itens_venda:
+        cursor.execute(
+            "INSERT INTO ItensVenda (id_venda, codigo_barras, lote, quantidade, preco_unitario, subtotal) VALUES (?, ?, ?, ?, ?, ?)",
+            (id_venda, codigo_barras, lote, quantidade, preco_unitario, subtotal)
+        )
+
+    conexao.commit()
+
+    resumo = "\n".join([f"{qtd}x {codigo} - R$ {subtotal:.2f}" for (codigo, _, qtd, _, subtotal) in itens_venda])
+    messagebox.showinfo("Venda Finalizada", f"Resumo da venda:\n\n{resumo}\n\nTotal: R$ {total:.2f}")
+
+    tree_venda.delete(*tree_venda.get_children())
+    label_total.config(text="Total: R$ 0.00")
+
+def preencher_campos(event):
+    selecionado = tree_venda.selection()
+    if selecionado:
+        valores = tree_venda.item(selecionado, "values")
+        codigo = valores[0]
+        quantidade = valores[4]
+
+        # Preenche os campos
+        entry_codigo.delete(0, tk.END)
+        entry_codigo.insert(0, codigo)
+
+        entry_quantidade.delete(0, tk.END)
+        entry_quantidade.insert(0, quantidade)
+
+def foco_quantidade(event=None):
+    entry_quantidade.focus_set()
