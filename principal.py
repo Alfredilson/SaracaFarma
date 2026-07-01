@@ -12,6 +12,13 @@ from controle_estoque import tela_estoque, tela_relatorio
 import datetime
 from db import conexao, cursor
 
+def fechar_programa():
+    conexao.close()
+    root.destroy()
+
+root = tk.Tk()
+root.protocol("WM_DELETE_WINDOW", fechar_programa)
+
 
 def cadastrar_lista_produtos():
     # Função placeholder para cadastro em lote
