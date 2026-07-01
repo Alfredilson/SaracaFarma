@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
+from db import conexao, cursor
 
 def abrir_funcoes_admin():
     admin = tk.Toplevel()
@@ -48,12 +49,9 @@ def abrir_cadastro_usuario():
     entry_perfil.grid(row=3, column=1, padx=10, pady=10)
 
     def salvar():
-        conn = sqlite3.connect("saracaFarma.db")
-        cursor = conn.cursor()
         cursor.execute("INSERT INTO Usuario (nome, login, senha, perfil) VALUES (?, ?, ?, ?)",
                        (entry_nome.get(), entry_login.get(), entry_senha_cad.get(), entry_perfil.get()))
-        conn.commit()
-        conn.close()
+        conexao.commit()
         messagebox.showinfo("Sucesso", "Usuário cadastrado com sucesso!")
         cadastro.destroy()
 
@@ -81,24 +79,18 @@ def alterar_admin():
     entry_senha.grid(row=1, column=1, padx=10, pady=10)
 
     def salvar_alteracao():
-        conn = sqlite3.connect("saracaFarma.db")
-        cursor = conn.cursor()
         cursor.execute("UPDATE Usuario SET nome=?, senha=? WHERE login='admin'",
                        (entry_nome.get(), entry_senha.get()))
-        conn.commit()
-        conn.close()
+        conexao.commit()
         messagebox.showinfo("Sucesso", "Dados do admin atualizados!")
         janela.destroy()
 
     ttk.Button(frame, text="Salvar", command=salvar_alteracao).grid(row=2, column=0, columnspan=2, pady=20)
 
     def salvar():
-        conn = sqlite3.connect("saracaFarma.db")
-        cursor = conn.cursor()
         cursor.execute("INSERT INTO Usuario (nome, login, senha, perfil) VALUES (?, ?, ?, ?)",
                        (entry_nome.get(), entry_login.get(), entry_senha_cad.get(), entry_perfil.get()))
-        conn.commit()
-        conn.close()
+        conexao.commit()
         messagebox.showinfo("Sucesso", "Usuário cadastrado com sucesso!")
         cadastro.destroy()
 
