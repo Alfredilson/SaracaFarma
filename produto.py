@@ -5,6 +5,7 @@ import sqlite3
 import csv
 import uuid
 from datetime import date
+from db import conexao, cursor
 
 def normalizar_data(data_str):
     formatos = ["%Y-%m-%d", "%Y/%m/%d", "%d/%m/%Y", "%d-%m-%Y"]
@@ -67,11 +68,9 @@ def cadastrar_produto(perfil):
         if not codigo:
             status_label.config(text=f"Informe o código de barras.", foreground="green")
             return
-        conn = sqlite3.connect("saracaFarma.db")
-        cursor = conn.cursor()
         cursor.execute("SELECT * FROM Produto WHERE codigo_barras = ?", (codigo,))
         produto = cursor.fetchone()
-        conn.close()
+        
 
         if produto:
             entry_nome.delete(0, tk.END); entry_nome.insert(0, produto[1])
@@ -110,8 +109,7 @@ def cadastrar_produto(perfil):
      if not lote:
         lote = "AUTO-" + str(uuid.uuid4())[:8]
 
-     conn = sqlite3.connect("saracaFarma.db")
-     cursor = conn.cursor()
+
      try:
         cursor.execute("SELECT * FROM Produto WHERE codigo_barras = ?", (codigo,))
         produto = cursor.fetchone()
@@ -131,7 +129,7 @@ def cadastrar_produto(perfil):
             VALUES (?, ?, 'entrada', ?, ?, ?)
         """, (codigo, lote, quantidade, data_atual, perfil))
 
-        conn.commit()
+        conexao.commit()
 
         # mostra mensagem na tela
         status_label.config(text=f"Produto e lote cadastrados! Lote: {lote}", foreground="green")
@@ -151,7 +149,7 @@ def cadastrar_produto(perfil):
      except Exception as e:
         status_label.config(text=f"Erro ao salvar: {e}", foreground="red")
      finally:
-        conn.close()
+        conexao.close()
 
 
     # --- Botões ---
@@ -209,11 +207,10 @@ def cadastrar_produtos_treeview(perfil):
         if not codigo:
             status_label.config(text="Informe o código de barras.", foreground="red")
             return
-        conn = sqlite3.connect("saracaFarma.db")
-        cursor = conn.cursor()
+        
         cursor.execute("SELECT * FROM Produto WHERE codigo_barras = ?", (codigo,))
         produto = cursor.fetchone()
-        conn.close()
+        
 
         if produto:
             entries["Nome"].delete(0, tk.END); entries["Nome"].insert(0, produto[1])
@@ -271,8 +268,6 @@ def cadastrar_produtos_treeview(perfil):
         status_label.config(text="Produto adicionado à lista.", foreground="green")
 
     def salvar_todos():
-        conn = sqlite3.connect("saracaFarma.db")
-        cursor = conn.cursor()
         erros = []
         for item in tree.get_children():
             valores = tree.item(item)["values"]
@@ -301,8 +296,7 @@ def cadastrar_produtos_treeview(perfil):
             except Exception as e:
                 erros.append(f"{nome}: {e}")
 
-        conn.commit()
-        conn.close()
+       
 
         if erros:
             status_label.config(text=f"Erros ao salvar: {', '.join(erros)}", foreground="red")
