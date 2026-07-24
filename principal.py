@@ -284,6 +284,7 @@ def finalizar_venda(tree_venda, perfil, forma_pagamento, janela_pagamento, id_cl
     total = 0.0
     itens_venda = []
 
+    # Primeiro: validar se há estoque suficiente para todos os itens
     for item in tree_venda.get_children():
         valores = tree_venda.item(item, "values")
         codigo_barras = valores[0]
@@ -294,7 +295,16 @@ def finalizar_venda(tree_venda, perfil, forma_pagamento, janela_pagamento, id_cl
         total += subtotal
         itens_venda.append((codigo_barras, lote, quantidade, preco_unitario, subtotal))
 
-        # Atualiza estoque por lote
+    # checar estoque por lote antes de aplicar alterações
+    for codigo_barras, lote, quantidade, _, _ in itens_venda:
+        cursor.execute("SELECT quantidade FROM LoteProduto WHERE codigo_barras = ? AND lote = ?", (codigo_barras, lote))
+        row = cursor.fetchone()
+        if not row or row[0] < quantidade:
+            messagebox.showwarning("Estoque insuficiente", f"Estoque insuficiente para {codigo_barras} (lote {lote}). Disponível: {row[0] if row else 0}, necessário: {quantidade}.")
+            return
+
+    # Atualiza estoque por lote (já validado)
+    for codigo_barras, lote, quantidade, _, _ in itens_venda:
         cursor.execute("UPDATE LoteProduto SET quantidade = quantidade - ? WHERE codigo_barras = ? AND lote = ?", (quantidade, codigo_barras, lote))
 
     # calcula quantidade total vendida
