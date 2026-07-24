@@ -4,11 +4,21 @@ import sqlite3
 from clinte import cadastrar_cliente
 from db import conexao, cursor
 
-def abrir_funcoes_admin():
-    admin = tk.Toplevel()
+def abrir_funcoes_admin(parent=None):
+    if parent and parent.winfo_exists():
+        parent.withdraw()
+
+    admin = tk.Toplevel(parent)
     admin.title("Funções Administrativas")
     admin.geometry("420x300")
     admin.configure(bg="#cce6ff")
+
+    def fechar_admin():
+        if parent and parent.winfo_exists():
+            parent.deiconify()
+        admin.destroy()
+
+    admin.protocol("WM_DELETE_WINDOW", fechar_admin)
 
     barra = tk.Frame(admin, bg="#0066cc", height=40)
     barra.pack(fill="x")
@@ -17,15 +27,25 @@ def abrir_funcoes_admin():
     frame = tk.Frame(admin, bg="#cce6ff")
     frame.pack(pady=30)
 
-    ttk.Button(frame, text="Cadastrar novo usuário", command=abrir_cadastro_usuario).pack(pady=10)
-    ttk.Button(frame, text="Alterar dados do admin", command=alterar_admin).pack(pady=10)
-    ttk.Button(frame, text="Cadastrar novo cliente", command=cadastrar_cliente).pack(pady=10)
+    ttk.Button(frame, text="Cadastrar novo usuário", command=lambda: abrir_cadastro_usuario(admin)).pack(pady=10)
+    ttk.Button(frame, text="Alterar dados do admin", command=lambda: alterar_admin(admin)).pack(pady=10)
+    ttk.Button(frame, text="Cadastrar novo cliente", command=lambda: cadastrar_cliente(admin)).pack(pady=10)
 
-def abrir_cadastro_usuario():
-    cadastro = tk.Toplevel()
+def abrir_cadastro_usuario(parent=None):
+    if parent and parent.winfo_exists():
+        parent.withdraw()
+
+    cadastro = tk.Toplevel(parent)
     cadastro.title("Cadastro de Usuário")
     cadastro.geometry("420x400")
     cadastro.configure(bg="#cce6ff")
+
+    def fechar_cadastro():
+        if parent and parent.winfo_exists():
+            parent.deiconify()
+        cadastro.destroy()
+
+    cadastro.protocol("WM_DELETE_WINDOW", fechar_cadastro)
 
     barra = tk.Frame(cadastro, bg="#0066cc", height=40)
     barra.pack(fill="x")
@@ -59,11 +79,21 @@ def abrir_cadastro_usuario():
 
     ttk.Button(frame, text="Salvar", command=salvar).grid(row=4, column=0, columnspan=2, pady=20)
 
-def alterar_admin():
-    janela = tk.Toplevel()
+def alterar_admin(parent=None):
+    if parent and parent.winfo_exists():
+        parent.withdraw()
+
+    janela = tk.Toplevel(parent)
     janela.title("Alterar dados do Admin")
     janela.geometry("420x300")
     janela.configure(bg="#cce6ff")
+
+    def fechar_alteracao():
+        if parent and parent.winfo_exists():
+            parent.deiconify()
+        janela.destroy()
+
+    janela.protocol("WM_DELETE_WINDOW", fechar_alteracao)
 
     barra = tk.Frame(janela, bg="#0066cc", height=40)
     barra.pack(fill="x")

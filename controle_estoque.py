@@ -174,9 +174,19 @@ def consultar_relatorio(tree, entry_data_inicial, entry_data_final, entry_usuari
         tree.insert("", "end", values=row)
 
 
-def tela_relatorio():
-    janela = tk.Toplevel()
+def tela_relatorio(parent=None):
+    if parent and parent.winfo_exists():
+        parent.withdraw()
+
+    janela = tk.Toplevel(parent)
     janela.title("Relatório de Movimentações")
+
+    def fechar_e_voltar():
+        if parent and parent.winfo_exists():
+            parent.deiconify()
+        janela.destroy()
+
+    janela.protocol("WM_DELETE_WINDOW", fechar_e_voltar)
 
     # import local para evitar dependência obrigatória na inicialização
     from tkcalendar import DateEntry
@@ -210,12 +220,22 @@ def tela_relatorio():
 
 
 # Função principal para montar a tela de estoque
-def tela_estoque(perfil):
+def tela_estoque(parent=None, perfil=None):
+    if parent and parent.winfo_exists():
+        parent.withdraw()
+
     # Cria a janela principal da tela de estoque
-    janela = tk.Tk()
+    janela = tk.Toplevel(parent)
     janela.title("Controle de Estoque")
     janela.state("zoomed")  # Abre a janela maximizada
     janela.configure(bg="#cce6ff")#Define a cor de fundo da janela
+
+    def fechar_e_voltar():
+        if parent and parent.winfo_exists():
+            parent.deiconify()
+        janela.destroy()
+
+    janela.protocol("WM_DELETE_WINDOW", fechar_e_voltar)
     #Barra superior azul escuro
     barra = tk.Frame(janela, bg="#0066cc", height=50)
     barra.pack(fill="x")
@@ -251,9 +271,9 @@ def tela_estoque(perfil):
      # Botão Entrada de Estoque com submenu
     menu_entrada = tk.Menu(janela, tearoff=0)
     menu_entrada.add_command(label="Cadastro Individual",
-                             command=lambda: [cadastrar_produto(perfil), consultar_estoque(tree, status_label)])
+                             command=lambda: [cadastrar_produto(janela, perfil), consultar_estoque(tree, status_label)])
     menu_entrada.add_command(label="Cadastro via Fornecedor",
-                             command=lambda: [cadastrar_produtos_fornecedor(perfil), consultar_estoque(tree, status_label)])
+                             command=lambda: [cadastrar_produtos_fornecedor(janela, perfil), consultar_estoque(tree, status_label)])
 
     btn_entrada = ttk.Menubutton(frame_top, text="Entrada de Estoque", menu=menu_entrada)
     btn_entrada.pack(side="left", padx=5)

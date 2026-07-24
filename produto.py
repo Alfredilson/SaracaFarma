@@ -18,11 +18,21 @@ def normalizar_data(data_str):
     raise ValueError("Formato de data inválido")
 
 # --- CADASTRO INDIVIDUAL ---
-def cadastrar_produto(perfil):
-    janela = tk.Toplevel()
+def cadastrar_produto(parent=None, perfil=None):
+    if parent and parent.winfo_exists():
+        parent.withdraw()
+
+    janela = tk.Toplevel(parent)
     janela.title("Cadastro de Produto")
     janela.state("zoomed")  # abre maximizada
     janela.configure(bg="#cce6ff")
+
+    def fechar_janela():
+        if parent and parent.winfo_exists():
+            parent.deiconify()
+        janela.destroy()
+
+    janela.protocol("WM_DELETE_WINDOW", fechar_janela)
 
     # --- Campos da interface ---
     ttk.Label(janela, text="Código de Barras:").pack(pady=5)
@@ -156,11 +166,21 @@ def cadastrar_produto(perfil):
     ttk.Button(janela, text="Salvar", command=salvar_produto).pack(pady=20)
 
 # --- CADASTRO EM LOTE VIA TREEVIEW ---
-def cadastrar_produtos_treeview(perfil):
-    janela = tk.Toplevel()
+def cadastrar_produtos_treeview(parent=None, perfil=None):
+    if parent and parent.winfo_exists():
+        parent.withdraw()
+
+    janela = tk.Toplevel(parent)
     janela.title("Cadastro em Lote - Treeview")
     janela.state("zoomed")  # abre maximizada
     janela.configure(bg="#cce6ff")
+
+    def fechar_janela():
+        if parent and parent.winfo_exists():
+            parent.deiconify()
+        janela.destroy()
+
+    janela.protocol("WM_DELETE_WINDOW", fechar_janela)
 
     # --- Formulário de entrada ---
     form_frame = tk.Frame(janela, bg="#cce6ff")
@@ -352,10 +372,20 @@ def cadastrar_produtos_treeview(perfil):
     entries["Código de Barras"].bind("<Return>", lambda event: buscar_produto_por_codigo())
 
 #--- CADASTRO EM LOTE VIA CSV DO FORNECEDOR (COM PREÇO DE CUSTO E VENDA) ---
-def cadastrar_produtos_fornecedor(perfil):
-    janela = tk.Toplevel()
+def cadastrar_produtos_fornecedor(parent=None, perfil=None):
+    if parent and parent.winfo_exists():
+        parent.withdraw()
+
+    janela = tk.Toplevel(parent)
     janela.title("Cadastro via Fornecedor - CSV")
     janela.state("zoomed")
+
+    def fechar_janela():
+        if parent and parent.winfo_exists():
+            parent.deiconify()
+        janela.destroy()
+
+    janela.protocol("WM_DELETE_WINDOW", fechar_janela)
 
     status_label = ttk.Label(janela, text="", foreground="green")
     status_label.pack(pady=5)

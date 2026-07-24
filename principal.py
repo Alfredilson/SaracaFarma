@@ -3,6 +3,7 @@ from tkinter import ttk, messagebox
 from tkinter import ttk
 import sqlite3
 from admin import abrir_funcoes_admin
+from clinte import cadastrar_cliente, listar_clientes
 from produto import cadastrar_produto
 from produto import cadastrar_produtos_treeview 
 #---from produto import cadastrar_produtos_csvgit
@@ -26,11 +27,17 @@ def tela_principal(id_usuario):
 
     principal = tk.Tk()
     principal.title("SaracaFarma - Tela Principal")
-    principal.geometry("600x400")
     principal.configure(bg="#cce6ff")
 
-     # Faz a janela abrir maximizada
-    principal.state("zoomed")   # no Windows
+    # Faz a janela abrir maximizada em todas as plataformas
+    try:
+        principal.state("zoomed")
+    except Exception:
+        pass
+    try:
+        principal.attributes("-zoomed", True)
+    except Exception:
+        pass
 
     # Fechamento seguro
     def fechar_programa():
@@ -45,26 +52,32 @@ def tela_principal(id_usuario):
 
       # Menu Cadastro
     menu_cadastro = tk.Menu(menubar, tearoff=0)
-    # Chamada direta da função de cadastro de produto (passa id do usuário)
-    menu_cadastro.add_command(label="Cadastro Individual", command=lambda: cadastrar_produto(id_usuario))
-    menu_cadastro.add_command(label="Cadastro em Lote (Treeview)", command=lambda: cadastrar_produtos_treeview(id_usuario))
-    #---menu_cadastro.add_command(label="Cadastro em Lote (CSV)", command=lambda: cadastrar_produtos_csv(id_usuario))
-    menu_cadastro.add_command(label="Cadastro em Lote via Fornecedor", command=lambda: cadastrar_produtos_fornecedor(id_usuario))
+    # Chamada direta da função de cadastro de produto (passa janela principal e id do usuário)
+    menu_cadastro.add_command(label="Cadastro Individual", command=lambda: cadastrar_produto(principal, id_usuario))
+    menu_cadastro.add_command(label="Cadastro em Lote (Treeview)", command=lambda: cadastrar_produtos_treeview(principal, id_usuario))
+    #---menu_cadastro.add_command(label="Cadastro em Lote (CSV)", command=lambda: cadastrar_produtos_csv(principal, id_usuario))
+    menu_cadastro.add_command(label="Cadastro em Lote via Fornecedor", command=lambda: cadastrar_produtos_fornecedor(principal, id_usuario))
 
 
     menubar.add_cascade(label="Cadastro", menu=menu_cadastro)
 
      # Menu Estoque
     menu_estoque = tk.Menu(menubar, tearoff=0)
-    menu_estoque.add_command(label="Controle de Estoque", command=lambda: tela_estoque(id_usuario)) # Placeholder para função de relatório
-    menu_estoque.add_command(label="Controlar Relatorio", command=tela_relatorio) # Placeholder para função de relatório
+    menu_estoque.add_command(label="Controle de Estoque", command=lambda: tela_estoque(principal, id_usuario))
+    menu_estoque.add_command(label="Controlar Relatorio", command=lambda: tela_relatorio(principal))
     menu_estoque.add_command(label="Consultar Saldo",)
     menubar.add_cascade(label="Estoque", menu=menu_estoque)
+
+    # Menu Cliente
+    menu_cliente = tk.Menu(menubar, tearoff=0)
+    menu_cliente.add_command(label="Cadastro de Cliente", command=lambda: cadastrar_cliente(principal))
+    menu_cliente.add_command(label="Lista de Clientes", command=lambda: listar_clientes(principal))
+    menubar.add_cascade(label="Cliente", menu=menu_cliente)
 
     # Menu Administração (somente se perfil for admin)
     if perfil == "admin":
         menu_admin = tk.Menu(menubar, tearoff=0)
-        menu_admin.add_command(label="Funções Administrativas", command=abrir_funcoes_admin)
+        menu_admin.add_command(label="Funções Administrativas", command=lambda: abrir_funcoes_admin(principal))
         menubar.add_cascade(label="Administração", menu=menu_admin)
     
        # Menu Sair
