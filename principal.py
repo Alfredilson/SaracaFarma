@@ -341,7 +341,7 @@ def finalizar_venda(tree_venda, perfil, forma_pagamento, janela_pagamento, id_cl
 
     conexao.commit()
 
-    resumo = "\n".join([f"{qtd}x {codigo} - R$ {subtotal:.2f}" for (codigo, qtd, _, subtotal) in itens_venda])
+    resumo = "\n".join([f"{qtd}x {codigo} - R$ {subtotal:.2f}" for (codigo, lote, qtd, _, subtotal) in itens_venda])
     messagebox.showinfo("Venda Finalizada", f"Resumo da venda:\n\n{resumo}\n\nTotal: R$ {total:.2f}\nPagamento: {forma_pagamento}")
 
     # Fecha janela de pagamento
