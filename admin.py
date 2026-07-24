@@ -118,13 +118,3 @@ def alterar_admin(parent=None):
         janela.destroy()
 
     ttk.Button(frame, text="Salvar", command=salvar_alteracao).grid(row=2, column=0, columnspan=2, pady=20)
-
-    def salvar():
-        cursor.execute("INSERT INTO Usuario (nome, login, senha, perfil) VALUES (?, ?, ?, ?)",
-                       (entry_nome.get(), entry_login.get(), entry_senha_cad.get(), entry_perfil.get()))
-        conexao.commit()
-        messagebox.showinfo("Sucesso", "Usuário cadastrado com sucesso!")
-        cadastro.destroy()
-
-    # Aqui estava o erro: faltava fechar o parêntese
-    ttk.Button(frame, text="Salvar", command=salvar).grid(row=4, column=0, columnspan=2, pady=20)
