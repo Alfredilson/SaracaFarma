@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
+from clinte import cadastrar_cliente
 from db import conexao, cursor
 
 def abrir_funcoes_admin():
@@ -18,6 +19,7 @@ def abrir_funcoes_admin():
 
     ttk.Button(frame, text="Cadastrar novo usuário", command=abrir_cadastro_usuario).pack(pady=10)
     ttk.Button(frame, text="Alterar dados do admin", command=alterar_admin).pack(pady=10)
+    ttk.Button(frame, text="Cadastrar novo cliente", command=cadastrar_cliente).pack(pady=10)
 
 def abrir_cadastro_usuario():
     cadastro = tk.Toplevel()

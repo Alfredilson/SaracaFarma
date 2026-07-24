@@ -5,20 +5,12 @@ import sqlite3
 from admin import abrir_funcoes_admin
 from produto import cadastrar_produto
 from produto import cadastrar_produtos_treeview 
-#---from produto import cadastrar_produtos_csv
+#---from produto import cadastrar_produtos_csvgit
 from produto import cadastrar_produtos_fornecedor
 from tkinter import filedialog
 from controle_estoque import tela_estoque, tela_relatorio
 import datetime
 from db import conexao, cursor
-
-def fechar_programa():
-    conexao.close()
-    root.destroy()
-
-root = tk.Tk()
-root.protocol("WM_DELETE_WINDOW", fechar_programa)
-
 
 def cadastrar_lista_produtos():
     # Função placeholder para cadastro em lote
@@ -26,7 +18,12 @@ def cadastrar_lista_produtos():
     if arquivo:
         messagebox.showinfo("Cadastro em Lote", f"Arquivo selecionado: {arquivo}\nFuncionalidade ainda não implementada.")
 
-def tela_principal(perfil):
+def tela_principal(id_usuario):
+    # obtém o perfil (admin/funcionario) do usuário logado
+    cursor.execute("SELECT perfil FROM Usuario WHERE id_usuario = ?", (id_usuario,))
+    row = cursor.fetchone()
+    perfil = row[0] if row else None
+
     principal = tk.Tk()
     principal.title("SaracaFarma - Tela Principal")
     principal.geometry("600x400")
@@ -34,27 +31,32 @@ def tela_principal(perfil):
 
      # Faz a janela abrir maximizada
     principal.state("zoomed")   # no Windows
-    # ou, se quiser ocupar toda a tela em qualquer sistema:
-    # principal.attributes("-fullscreen", True)
-       
+
+    # Fechamento seguro
+    def fechar_programa():
+        from db import conexao
+        conexao.close()
+        principal.destroy()
+
+    principal.protocol("WM_DELETE_WINDOW", fechar_programa)
 
     # Criar barra de menu
     menubar = tk.Menu(principal)
 
       # Menu Cadastro
     menu_cadastro = tk.Menu(menubar, tearoff=0)
-    #Chamada direta da função de cadastro de produto.
-    menu_cadastro.add_command(label="Cadastro Individual", command=lambda: cadastrar_produto(perfil))
-    menu_cadastro.add_command(label="Cadastro em Lote (Treeview)", command=lambda: cadastrar_produtos_treeview(perfil))
-    #---menu_cadastro.add_command(label="Cadastro em Lote (CSV)", command=lambda: cadastrar_produtos_csv(perfil))
-    menu_cadastro.add_command(label="Cadastro em Lote via Fornecedor", command=lambda: cadastrar_produtos_fornecedor(perfil))
+    # Chamada direta da função de cadastro de produto (passa id do usuário)
+    menu_cadastro.add_command(label="Cadastro Individual", command=lambda: cadastrar_produto(id_usuario))
+    menu_cadastro.add_command(label="Cadastro em Lote (Treeview)", command=lambda: cadastrar_produtos_treeview(id_usuario))
+    #---menu_cadastro.add_command(label="Cadastro em Lote (CSV)", command=lambda: cadastrar_produtos_csv(id_usuario))
+    menu_cadastro.add_command(label="Cadastro em Lote via Fornecedor", command=lambda: cadastrar_produtos_fornecedor(id_usuario))
 
 
     menubar.add_cascade(label="Cadastro", menu=menu_cadastro)
 
      # Menu Estoque
     menu_estoque = tk.Menu(menubar, tearoff=0)
-    menu_estoque.add_command(label="Controle de Estoque", command=lambda: tela_estoque(perfil)) # Placeholder para função de relatório
+    menu_estoque.add_command(label="Controle de Estoque", command=lambda: tela_estoque(id_usuario)) # Placeholder para função de relatório
     menu_estoque.add_command(label="Controlar Relatorio", command=tela_relatorio) # Placeholder para função de relatório
     menu_estoque.add_command(label="Consultar Saldo",)
     menubar.add_cascade(label="Estoque", menu=menu_estoque)
@@ -172,7 +174,7 @@ def tela_principal(perfil):
              command=lambda: remover_item(tree_venda)).pack(side="left", padx=5)
 
     tk.Button(frame_botoes, text="Finalizar Venda", bg="#0066cc", fg="white",
-          command=lambda: escolher_pagamento(tree_venda, perfil)).pack(side="left", padx=5)
+          command=lambda: escolher_pagamento(tree_venda, id_usuario)).pack(side="left", padx=5)
 
     principal.mainloop()
 
@@ -273,10 +275,8 @@ def remover_item(tree_venda):
     else:
         messagebox.showwarning("Atenção", "Selecione um item para remover!")
 
-def finalizar_venda(tree_venda, perfil, forma_pagamento, janela_pagamento=None):
-
-    cursor = sqlite3.connect("saracaFarma.db").cursor()
-
+def finalizar_venda(tree_venda, perfil, forma_pagamento, janela_pagamento, id_cliente=None):
+    # perfil aqui representa o id do usuário que efetuou a venda
     if not tree_venda.get_children():
         messagebox.showwarning("Atenção", "Nenhum item na venda!")
         return
@@ -287,24 +287,47 @@ def finalizar_venda(tree_venda, perfil, forma_pagamento, janela_pagamento=None):
     for item in tree_venda.get_children():
         valores = tree_venda.item(item, "values")
         codigo_barras = valores[0]
+        lote = valores[3]
         quantidade = int(valores[4])
         preco_unitario = float(valores[5])
         subtotal = float(valores[6])
         total += subtotal
-        itens_venda.append((codigo_barras, quantidade, preco_unitario, subtotal))
+        itens_venda.append((codigo_barras, lote, quantidade, preco_unitario, subtotal))
 
-        # Atualiza estoque
-        cursor.execute("UPDATE LoteProduto SET quantidade = quantidade - ? WHERE codigo_barras = ?", (quantidade, codigo_barras))
+        # Atualiza estoque por lote
+        cursor.execute("UPDATE LoteProduto SET quantidade = quantidade - ? WHERE codigo_barras = ? AND lote = ?", (quantidade, codigo_barras, lote))
 
-    # Registra venda com forma de pagamento
-    cursor.execute("INSERT INTO Venda (data, id_usuario, id_produto, quantidade, valor_total) VALUES (datetime('now'), ?, ?, ?, ?)",
-                   (perfil, itens_venda[0][0], itens_venda[0][1], total))
+    # calcula quantidade total vendida
+    quantidade_total = sum(i[2] for i in itens_venda)
+
+    # normalize forma_pagamento para os valores aceitos pelo schema
+    fp = str(forma_pagamento).lower()
+    if "pix" in fp:
+        forma = "pix"
+    elif "fiado" in fp:
+        forma = "fiado"
+    elif "cart" in fp or "cartão" in fp or "cartao" in fp:
+        if "débito" in fp or "debito" in fp or "débito" in forma_pagamento:
+            forma = "cartao_debito"
+        else:
+            forma = "cartao_credito"
+    else:
+        forma = "dinheiro"
+
+    # Registra venda (usa primeiro produto como referência em id_produto)
+    primeiro_produto = itens_venda[0][0] if itens_venda else None
+    cursor.execute(
+        "INSERT INTO Venda (data, id_usuario, id_produto, quantidade, valor_total, forma_pagamento, id_cliente) VALUES (datetime('now'), ?, ?, ?, ?, ?, ?)",
+        (perfil, primeiro_produto, quantidade_total, total, forma, id_cliente)
+    )
     id_venda = cursor.lastrowid
 
-    # Registra itens
-    for codigo_barras, quantidade, preco_unitario, subtotal in itens_venda:
-        cursor.execute("INSERT INTO ItensVenda (id_venda, codigo_barras, lote, quantidade, preco_unitario, subtotal) VALUES (?, ?, '', ?, ?, ?)",
-                       (id_venda, codigo_barras, quantidade, preco_unitario, subtotal))
+    # Registra itens corretamente
+    for codigo_barras, lote, quantidade, preco_unitario, subtotal in itens_venda:
+        cursor.execute(
+            "INSERT INTO ItensVenda (id_venda, codigo_barras, lote, quantidade, preco_unitario, subtotal) VALUES (?, ?, ?, ?, ?, ?)",
+            (id_venda, codigo_barras, lote, quantidade, preco_unitario, subtotal)
+        )
 
     conexao.commit()
 
@@ -351,8 +374,7 @@ def escolher_pagamento(tree_venda, perfil):
 
     # Opções
     tk.Radiobutton(janela_pagamento, text="Dinheiro", variable=forma_pagamento, value="dinheiro", bg="#cce6ff").pack(anchor="w", padx=20)
-    tk.Radiobutton(janela_pagamento, text="Cartão Crédito", variable=forma_pagamento, value="cartao_credito", bg="#cce6ff").pack(anchor="w", padx=20)
-    tk.Radiobutton(janela_pagamento, text="Cartão Débito", variable=forma_pagamento, value="cartao_debito", bg="#cce6ff").pack(anchor="w", padx=20)
+    tk.Radiobutton(janela_pagamento, text="Cartão", variable=forma_pagamento, value="cartao", bg="#cce6ff").pack(anchor="w", padx=20)
     tk.Radiobutton(janela_pagamento, text="Fiado (Crédito)", variable=forma_pagamento, value="fiado", bg="#cce6ff").pack(anchor="w", padx=20)
     tk.Radiobutton(janela_pagamento, text="Pix", variable=forma_pagamento, value="pix", bg="#cce6ff").pack(anchor="w", padx=20)
 
@@ -363,6 +385,10 @@ def escolher_pagamento(tree_venda, perfil):
 
         if forma_pagamento.get() == "dinheiro":
             pagamento_dinheiro(total, perfil, tree_venda)
+        elif forma_pagamento.get() == "cartao":
+            pagamento_cartao(total, perfil, tree_venda)
+        elif forma_pagamento.get() == "fiado":
+            pagamento_fiado(total, perfil, tree_venda)
         else:
             finalizar_venda(tree_venda, perfil, forma_pagamento.get())
 
@@ -408,15 +434,24 @@ def pagamento_dinheiro(total, perfil, tree_venda):
             troco = valor_recebido - valor_final
             if troco < 0:
                 resultado_label.config(text=f"Valor insuficiente! Faltam R$ {-troco:.2f}", fg="red")
+                confirmar_btn.config(state="disabled")
             else:
                 resultado_label.config(text=f"Troco: R$ {troco:.2f}", fg="green")
-                # Aqui chamamos finalizar_venda com forma_pagamento = 'dinheiro'
-                finalizar_venda(tree_venda, perfil, "dinheiro", janela_dinheiro)
+                confirmar_btn.config(state="normal")
         except ValueError:
             messagebox.showwarning("Erro", "Digite valores válidos!")
 
-    tk.Button(janela_dinheiro, text="Confirmar Pagamento", bg="#4CAF50", fg="white",
-              command=calcular_troco).pack(pady=15)
+    def confirmar_pagamento():
+        # Só confirma se o botão estiver habilitado
+        finalizar_venda(tree_venda, perfil, "dinheiro", janela_dinheiro)
+
+    tk.Button(janela_dinheiro, text="Calcular Troco", bg="#2196F3", fg="white",
+              command=calcular_troco).pack(pady=10)
+
+    confirmar_btn = tk.Button(janela_dinheiro, text="Confirmar Pagamento",
+                              bg="#4CAF50", fg="white",
+                              command=confirmar_pagamento, state="disabled")
+    confirmar_btn.pack(pady=15)
 
 def calcular_total(tree_venda):
     total = 0.0
@@ -425,3 +460,72 @@ def calcular_total(tree_venda):
         subtotal = float(valores[6])  # coluna do subtotal
         total += subtotal
     return total
+
+def pagamento_cartao(total, perfil, tree_venda):
+    janela_cartao = tk.Toplevel()
+    janela_cartao.title("Pagamento com Cartão")
+    janela_cartao.geometry("350x250")
+    janela_cartao.configure(bg="#f0f8ff")
+
+    tk.Label(janela_cartao, text=f"Total da compra: R$ {total:.2f}",
+             font=("Segoe UI", 12, "bold"), bg="#f0f8ff").pack(pady=10)
+
+    # Escolha do tipo de cartão
+    tk.Label(janela_cartao, text="Selecione o tipo de cartão:", bg="#f0f8ff").pack()
+    tipo_cartao = tk.StringVar(value="crédito")
+    ttk.Radiobutton(janela_cartao, text="Crédito", variable=tipo_cartao, value="crédito").pack()
+    ttk.Radiobutton(janela_cartao, text="Débito", variable=tipo_cartao, value="débito").pack()
+
+    # Campo opcional para código de autorização
+    tk.Label(janela_cartao, text="Código de autorização (opcional):", bg="#f0f8ff").pack()
+    entry_codigo = ttk.Entry(janela_cartao)
+    entry_codigo.pack(pady=5)
+
+    def confirmar_pagamento():
+        codigo = entry_codigo.get().strip()
+        forma = f"cartão {tipo_cartao.get()}"
+        if codigo:
+            messagebox.showinfo("Pagamento aprovado", f"Compra registrada com {forma}.\nAutorização: {codigo}")
+        else:
+            messagebox.showinfo("Pagamento aprovado", f"Compra registrada com {forma}.")
+        finalizar_venda(tree_venda, perfil, forma, janela_cartao)
+
+    tk.Button(janela_cartao, text="Confirmar Pagamento", bg="#4CAF50", fg="white",
+              command=confirmar_pagamento).pack(pady=15)
+
+def pagamento_fiado(total, perfil, tree_venda):
+    janela_fiado = tk.Toplevel()
+    janela_fiado.title("Pagamento Fiado")
+    janela_fiado.geometry("400x250")
+    janela_fiado.configure(bg="#f0f8ff")
+
+    tk.Label(janela_fiado, text=f"Total da compra: R$ {total:.2f}",
+             font=("Segoe UI", 12, "bold"), bg="#f0f8ff").pack(pady=10)
+
+    # Seleção do cliente
+    tk.Label(janela_fiado, text="Cliente (nome ou CPF):", bg="#f0f8ff").pack()
+    entry_cliente = ttk.Entry(janela_fiado)
+    entry_cliente.pack(pady=5)
+
+    def confirmar_fiado():
+        cliente = entry_cliente.get().strip()
+        if not cliente:
+            messagebox.showwarning("Erro", "Informe o cliente!")
+            return
+
+        # Busca cliente no banco
+        cursor.execute("SELECT id_cliente FROM Cliente WHERE nome = ? OR cpf = ?", (cliente, cliente))
+        resultado = cursor.fetchone()
+
+        if resultado:
+            id_cliente = resultado[0]
+        else:
+            messagebox.showwarning("Erro", "Cliente não encontrado! Cadastre primeiro.")
+            return
+
+        # Finaliza venda com forma_pagamento = fiado
+        finalizar_venda(tree_venda, perfil, "fiado", janela_fiado, id_cliente=id_cliente)
+
+    tk.Button(janela_fiado, text="Confirmar Fiado", bg="#4CAF50", fg="white",
+              command=confirmar_fiado).pack(pady=15)
+

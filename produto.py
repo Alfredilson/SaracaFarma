@@ -148,8 +148,7 @@ def cadastrar_produto(perfil):
 
      except Exception as e:
         status_label.config(text=f"Erro ao salvar: {e}", foreground="red")
-     finally:
-        conexao.close()
+    
 
 
     # --- Botões ---
@@ -282,6 +281,7 @@ def cadastrar_produtos_treeview(perfil):
                         INSERT INTO Produto (codigo_barras, nome, categoria, apresentacao, dosagem, fabricante)
                         VALUES (?, ?, ?, ?, ?, ?)
                     """, (codigo, nome, categoria, apresentacao, dosagem, fabricante))
+                    conexao.commit()  # commit após inserir o produto
 
                 # cadastra lote
                 cursor.execute("""
@@ -292,6 +292,7 @@ def cadastrar_produtos_treeview(perfil):
                     INSERT INTO MovimentacaoEstoque (codigo_barras, lote, tipo, quantidade, data, id_usuario)
                     VALUES (?, ?, 'entrada', ?, ?, ?)
                 """, (codigo, lote, int(quantidade), date.today(), perfil))
+                conexao.commit()  # commit após inserir o lote e movimentação   
 
             except Exception as e:
                 erros.append(f"{nome}: {e}")
@@ -457,8 +458,6 @@ def cadastrar_produtos_fornecedor(perfil):
 
     # --- Salvar no banco (sem preço de custo) ---
     def salvar_todos():
-        conn = sqlite3.connect("saracaFarma.db")
-        cursor = conn.cursor()
         erros = []
         for item in tree.get_children():
             valores = tree.item(item)["values"]
@@ -502,9 +501,7 @@ def cadastrar_produtos_fornecedor(perfil):
             except Exception as e:
                 erros.append(f"{nome}: {e}")
 
-        conn.commit()
-        conn.close()
-
+        conexao.commit()  # commit após inserir todos os produtos e lotes
         if erros:
             status_label.config(text=f"Erros ao salvar: {', '.join(erros)}", foreground="red")
         else:

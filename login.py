@@ -33,12 +33,12 @@ def inicializar_banco():
 def validar_login():
     usuario = entry_usuario.get()
     senha = entry_senha.get()
-    cursor.execute("SELECT perfil FROM Usuario WHERE login=? AND senha=?", (usuario, senha))
+    cursor.execute("SELECT id_usuario, perfil FROM Usuario WHERE login=? AND senha=?", (usuario, senha))
     result = cursor.fetchone()
     if result:
-        perfil = result[0]
-        root.destroy()          #Fecha a tela de login
-        tela_principal(perfil)   # chama a tela principal
+        id_usuario, perfil = result
+        root.destroy()          # Fecha a tela de login
+        tela_principal(id_usuario)   # chama a tela principal com o id do usuário
     else:
         messagebox.showerror("Erro", "Usuário ou senha inválidos.")
 
