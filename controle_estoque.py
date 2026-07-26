@@ -4,6 +4,7 @@ from tkinter import ttk
 from produto import cadastrar_produto, cadastrar_produtos_fornecedor
 import datetime
 from db import conexao, cursor
+from ui_theme import apply_theme, styled_button, PRIMARY_BG, HEADER_BG, HEADER_FG, SECONDARY_BG, INFO_FG, SUCCESS_FG, ERROR_FG, WARNING_FG
 
 # Função para consultar o estoque e atualizar a Treeview
 def consultar_estoque(tree, status_label):
@@ -30,26 +31,26 @@ def consultar_estoque(tree, status_label):
             tree.insert("", tk.END, values=registro)
 
         # Mensagem de sucesso exibida na própria tela
-        status_label.config(text="Estoque atualizado com sucesso!", foreground="green")
+        status_label.config(text="Estoque atualizado com sucesso!", foreground=SUCCESS_FG)
 
         conn.close()
     except Exception as e:
         # Mensagem de erro exibida na própria tela
-        status_label.config(text=f"Erro ao consultar estoque: {e}", foreground="red")
+        status_label.config(text=f"Erro ao consultar estoque: {e}", foreground=ERROR_FG)
 
 
 
 def baixa_estoque(tree, status_label, id_usuario=None):
     itens = tree.selection()
     if not itens:
-        status_label.config(text="Selecione um ou mais produtos para dar baixa.", fg="red")
+        status_label.config(text="Selecione um ou mais produtos para dar baixa.", fg=ERROR_FG)
         return
 
     janela_baixa = tk.Toplevel()
     janela_baixa.title("Baixa de Estoque")
-    janela_baixa.configure(bg="#cce6ff")
+    apply_theme(janela_baixa)
 
-    tk.Label(janela_baixa, text="Quantidade a dar baixa:", bg="#cce6ff").pack(pady=5)
+    tk.Label(janela_baixa, text="Quantidade a dar baixa:", bg=PRIMARY_BG).pack(pady=5)
     entry_qtd = ttk.Entry(janela_baixa)
     entry_qtd.pack(pady=5)
 
@@ -57,7 +58,7 @@ def baixa_estoque(tree, status_label, id_usuario=None):
         try:
             qtd_baixa = int(entry_qtd.get())
         except ValueError:
-            status_label.config(text="Erro: informe um número válido.", fg="red")
+            status_label.config(text="Erro: informe um número válido.", fg=ERROR_FG)
             return
 
         conn = sqlite3.connect("saracaFarma.db")
@@ -97,14 +98,14 @@ def baixa_estoque(tree, status_label, id_usuario=None):
         conn.close()
 
         if sucessos:
-            status_label.config(text=f"Baixa realizada: {', '.join(sucessos)}", fg="green")
+            status_label.config(text=f"Baixa realizada: {', '.join(sucessos)}", fg=SUCCESS_FG)
         if erros:
-            status_label.config(text=f"Erro: estoque insuficiente em {', '.join(erros)}", fg="red")
+            status_label.config(text=f"Erro: estoque insuficiente em {', '.join(erros)}", fg=ERROR_FG)
 
         consultar_estoque(tree, status_label)
         janela_baixa.destroy()
 
-    ttk.Button(janela_baixa, text="Confirmar", command=confirmar_baixa).pack(pady=10)
+    styled_button(janela_baixa, text="Confirmar", kind="secondary", command=confirmar_baixa).pack(pady=10)
 
 def consultar_saldo(tree):
 
@@ -206,15 +207,17 @@ def tela_relatorio(parent=None):
     tree = ttk.Treeview(janela, show="headings")
     tree.grid(row=4, column=0, columnspan=2)
 
-    tk.Button(
+    styled_button(
         janela,
         text="Consultar Relatório",
+        kind="primary",
         command=lambda: consultar_relatorio(tree, entry_data_inicial, entry_data_final, entry_usuario)
     ).grid(row=3, column=0, columnspan=2)
 
-    tk.Button(
+    styled_button(
         janela,
         text="Consultar Saldo",
+        kind="primary",
         command=lambda: consultar_saldo(tree)
     ).grid(row=5, column=0, columnspan=2)
 
@@ -228,7 +231,7 @@ def tela_estoque(parent=None, perfil=None):
     janela = tk.Toplevel(parent)
     janela.title("Controle de Estoque")
     janela.state("zoomed")  # Abre a janela maximizada
-    janela.configure(bg="#cce6ff")#Define a cor de fundo da janela
+    apply_theme(janela)
 
     def fechar_e_voltar():
         if parent and parent.winfo_exists():
@@ -237,12 +240,12 @@ def tela_estoque(parent=None, perfil=None):
 
     janela.protocol("WM_DELETE_WINDOW", fechar_e_voltar)
     #Barra superior azul escuro
-    barra = tk.Frame(janela, bg="#0066cc", height=50)
+    barra = tk.Frame(janela, bg=HEADER_BG, height=50)
     barra.pack(fill="x")
-    tk.Label(barra, text="Controle de Estoque - SaracaFarma", fg="white", bg="#0066cc", font=("Segoe UI", 16, "bold")).pack(pady=10)
+    tk.Label(barra, text="Controle de Estoque - SaracaFarma", fg=HEADER_FG, bg=HEADER_BG, font=("Segoe UI", 16, "bold")).pack(pady=10)
 
     # Frame superior com botões
-    frame_top = tk.Frame(janela, bg="#cce6ff")
+    frame_top = tk.Frame(janela, bg=PRIMARY_BG)
     frame_top.pack(fill="x", padx=10, pady=5)
 
     # Treeview central para listar os produtos
@@ -260,13 +263,13 @@ def tela_estoque(parent=None, perfil=None):
     tree.pack(fill="both", expand=True, padx=10, pady=5)
 
     # Label inferior para mensagens de status
-    status_label = tk.Label(janela, text="", anchor="w", fg="blue")
+    status_label = tk.Label(janela, text="", anchor="w", fg=INFO_FG, bg=PRIMARY_BG)
     status_label.pack(fill="x", padx=10, pady=5)
 
     # Botões principais
-    btn_atualizar = tk.Button(frame_top, text="Atualizar Estoque",
-                              command=lambda: consultar_estoque(tree, status_label))
-    btn_atualizar.pack(side="left", padx=5)
+    styled_button(frame_top, text="Atualizar Estoque",
+                              kind="primary",
+                              command=lambda: consultar_estoque(tree, status_label)).pack(side="left", padx=5)
 
      # Botão Entrada de Estoque com submenu
     menu_entrada = tk.Menu(janela, tearoff=0)
@@ -278,13 +281,12 @@ def tela_estoque(parent=None, perfil=None):
     btn_entrada = ttk.Menubutton(frame_top, text="Entrada de Estoque", menu=menu_entrada)
     btn_entrada.pack(side="left", padx=5)
 
-    btn_baixa = ttk.Button(frame_top, text="Baixa de Estoque",
-                       command=lambda: baixa_estoque(tree, status_label, perfil))
-    btn_baixa.pack(side="left", padx=5)
+    styled_button(frame_top, text="Baixa de Estoque", kind="secondary",
+                       command=lambda: baixa_estoque(tree, status_label, perfil)).pack(side="left", padx=5)
 
-    btn_relatorios = tk.Button(frame_top, text="Relatórios",
-                               command=lambda: status_label.config(text="Função de relatórios ainda não implementada", fg="orange"))
-    btn_relatorios.pack(side="left", padx=5)
+    styled_button(frame_top, text="Relatórios",
+                               kind="primary",
+                               command=lambda: status_label.config(text="Função de relatórios ainda não implementada", fg=WARNING_FG)).pack(side="left", padx=5)
 
     # Inicia a janela
     janela.mainloop()

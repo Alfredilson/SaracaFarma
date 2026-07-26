@@ -33,7 +33,9 @@ CREATE TABLE IF NOT EXISTS Cliente (
     cpf TEXT UNIQUE,
     telefone TEXT,
     email TEXT,
-    endereco TEXT
+    endereco TEXT,
+    permite_fiado INTEGER NOT NULL DEFAULT 0,
+    limite_fiado REAL NOT NULL DEFAULT 0.0
 );
 
 CREATE TABLE IF NOT EXISTS Venda (

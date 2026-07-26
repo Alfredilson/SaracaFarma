@@ -12,6 +12,7 @@ from tkinter import filedialog
 from controle_estoque import tela_estoque, tela_relatorio
 import datetime
 from db import conexao, cursor
+from ui_theme import apply_theme, styled_button, PRIMARY_BG, HEADER_BG, HEADER_FG, SECONDARY_BG, INFO_FG, TREE_BG, TREE_SEL_BG, TREE_HEADING_FG, TEXT_PRIMARY_FG, BUTTON_TEXT_FG
 
 def cadastrar_lista_produtos():
     # Função placeholder para cadastro em lote
@@ -27,7 +28,7 @@ def tela_principal(id_usuario):
 
     principal = tk.Tk()
     principal.title("SaracaFarma - Tela Principal")
-    principal.configure(bg="#cce6ff")
+    apply_theme(principal)
 
     # Faz a janela abrir maximizada em todas as plataformas
     try:
@@ -36,6 +37,13 @@ def tela_principal(id_usuario):
         pass
     try:
         principal.attributes("-zoomed", True)
+    except Exception:
+        pass
+    # Fallback: se não foi possível maximizar, ajustar para o tamanho da tela
+    try:
+        # Alguns backends não respeitam 'zoomed' — definir geometry como fallback
+        if principal.wm_state() not in ("zoomed", "iconic"):
+            principal.geometry(f"{principal.winfo_screenwidth()}x{principal.winfo_screenheight()}+0+0")
     except Exception:
         pass
 
@@ -85,13 +93,13 @@ def tela_principal(id_usuario):
     menu_sair.add_command(label="Encerrar", command=principal.quit)
     menubar.add_cascade(label="Sair", menu=menu_sair)
 
-    barra = tk.Frame(principal, bg="#0066cc", height=40)
+    barra = tk.Frame(principal, bg=HEADER_BG, height=40)
     barra.pack(fill="x")
-    tk.Label(barra, text="Tela Principal - SaracaFarma", fg="white", bg="#0066cc", font=("Segoe UI", 14, "bold")).pack(pady=5)
+    tk.Label(barra, text="Tela Principal - SaracaFarma", fg=HEADER_FG, bg=HEADER_BG, font=("Segoe UI", 14, "bold")).pack(pady=5)
 
    
    
-    frame = tk.Frame(principal, bg="#cce6ff")
+    frame = tk.Frame(principal, bg=PRIMARY_BG)
     frame.pack(pady=30)
 
     
@@ -105,30 +113,30 @@ def tela_principal(id_usuario):
 
     # Estilo da Treeview (linhas)
     style.configure("Treeview",
-        background="#e6f2ff",       # azul claro para fundo das linhas
-        foreground="black",
+        background=TREE_BG,
+        foreground=TEXT_PRIMARY_FG,
         rowheight=25,
-        fieldbackground="#e6f2ff"
+        fieldbackground=TREE_BG
     )
 
     style.map("Treeview",
-        background=[("selected", "#3399ff")],
-        foreground=[("selected", "white")]
+        background=[("selected", TREE_SEL_BG)],
+        foreground=[("selected", BUTTON_TEXT_FG)]
     )
 
     # Estilo do cabeçalho (descrição das colunas)
     style.configure("Treeview.Heading",
-        background="#0066cc",   # azul forte
-        foreground="silver",    # texto em tom prata
+        background=HEADER_BG,
+        foreground=TREE_HEADING_FG,
         font=("Segoe UI", 11, "bold")
 )
 
    # Frame superior (campos de entrada)
-    frame_campos = tk.Frame(principal, bg="#cce6ff")
+    frame_campos = tk.Frame(principal, bg=PRIMARY_BG)
     frame_campos.pack(fill="x", padx=20, pady=10)
 
     #campo para codigo de barras
-    tk.Label(frame_campos, text="Código de Barras:", bg="#cce6ff").pack(side="left", padx=5)
+    tk.Label(frame_campos, text="Código de Barras:", bg=PRIMARY_BG).pack(side="left", padx=5)
     global entry_codigo
     entry_codigo = ttk.Entry(frame_campos, width=20)
     entry_codigo.pack(side="left", padx=5)
@@ -138,7 +146,7 @@ def tela_principal(id_usuario):
     entry_codigo.bind("<Return>", lambda event: entry_quantidade.focus_set())
 
     #campo para quantidade
-    tk.Label(frame_campos, text="Quantidade:", bg="#cce6ff").pack(side="left", padx=5)
+    tk.Label(frame_campos, text="Quantidade:", bg=PRIMARY_BG).pack(side="left", padx=5)
     global entry_quantidade
     entry_quantidade = ttk.Entry(frame_campos, width=10)
     entry_quantidade.pack(side="left", padx=5)
@@ -146,11 +154,46 @@ def tela_principal(id_usuario):
     # 🔑 Quando apertar Enter na quantidade → chama adicionar_item
     entry_quantidade.bind("<Return>", lambda event: adicionar_item(tree_venda))
 
+    cliente_map = {}
+    cliente_id_selecionado = {"id": None}
+
+    def carregar_clientes_venda():
+        cliente_map.clear()
+        valores = ["Nenhum"]
+        cursor.execute("SELECT id_cliente, nome, cpf FROM Cliente ORDER BY nome")
+        for id_cliente, nome, cpf in cursor.fetchall():
+            display = f"{nome} - {cpf}"
+            cliente_map[display] = id_cliente
+            valores.append(display)
+        combo_cliente['values'] = valores
+        combo_cliente.set("Nenhum")
+        cliente_id_selecionado["id"] = None
+
+    def atualizar_cliente_selecionado(event=None):
+        display = combo_cliente.get()
+        if display == "Nenhum":
+            cliente_id_selecionado["id"] = None
+        else:
+            cliente_id_selecionado["id"] = cliente_map.get(display)
+
+    def limpar_cliente():
+        combo_cliente.set("Nenhum")
+        cliente_id_selecionado["id"] = None
+
+    frame_cliente = tk.Frame(principal, bg=PRIMARY_BG)
+    frame_cliente.pack(fill="x", padx=20, pady=(10, 0))
+    tk.Label(frame_cliente, text="Cliente (opcional):", bg=PRIMARY_BG).pack(side="left", padx=5)
+    combo_cliente = ttk.Combobox(frame_cliente, width=40, state="readonly")
+    combo_cliente.pack(side="left", padx=5)
+    combo_cliente.bind("<<ComboboxSelected>>", atualizar_cliente_selecionado)
+    styled_button(frame_cliente, text="Limpar cliente", kind="primary", command=limpar_cliente).pack(side="left", padx=5)
+    carregar_clientes_venda()
+
     # Frame de vendas (Treeview + total)
-    frame_vendas = tk.Frame(principal, bg="#cce6ff")
+    frame_vendas = tk.Frame(principal, bg=PRIMARY_BG)
     frame_vendas.pack(fill="both", expand=True, padx=20, pady=20)
 
-    tk.Label(frame_vendas, text="Vendas", font=("Segoe UI", 16, "bold"), bg="#cce6ff").pack(pady=10)
+    tk.Label(frame_vendas, text="Vendas", font=("Segoe UI", 16, "bold"), bg=PRIMARY_BG).pack(pady=10)
 
     colunas = ("codigo_barras", "nome", "dosagem", "lote", "quantidade", "preco_unitario", "subtotal")
     nomes_colunas = {
@@ -173,21 +216,21 @@ def tela_principal(id_usuario):
 
     # Label do total
     global label_total
-    label_total = tk.Label(frame_vendas, text="Total: R$ 0.00", font=("Arial", 14, "bold"), bg="#cce6ff")
+    label_total = tk.Label(frame_vendas, text="Total: R$ 0.00", font=("Arial", 14, "bold"), bg=PRIMARY_BG)
     label_total.pack(pady=10)
 
     # Frame de botões
-    frame_botoes = tk.Frame(principal, bg="#cce6ff")
+    frame_botoes = tk.Frame(principal, bg=PRIMARY_BG)
     frame_botoes.pack(pady=10)
 
-    tk.Button(frame_botoes, text="Adicionar Item", bg="#4CAF50", fg="white",
+    styled_button(frame_botoes, text="Adicionar Item", kind="secondary",
            command=lambda: adicionar_item(tree_venda)).pack(side="left", padx=5)
 
-    tk.Button(frame_botoes, text="Remover Item", bg="#f44336", fg="white",
+    styled_button(frame_botoes, text="Remover Item", kind="danger",
              command=lambda: remover_item(tree_venda)).pack(side="left", padx=5)
 
-    tk.Button(frame_botoes, text="Finalizar Venda", bg="#0066cc", fg="white",
-          command=lambda: escolher_pagamento(tree_venda, id_usuario)).pack(side="left", padx=5)
+    styled_button(frame_botoes, text="Finalizar Venda", kind="primary",
+          command=lambda: escolher_pagamento(tree_venda, id_usuario, cliente_id_selecionado["id"])).pack(side="left", padx=5)
 
     principal.mainloop()
 
@@ -196,13 +239,13 @@ def verificar_admin():
     janela = tk.Toplevel()
     janela.title("Verificação Admin")
     janela.geometry("300x200")
-    janela.configure(bg="#cce6ff")
+    janela.configure(bg=PRIMARY_BG)
 
-    tk.Label(janela, text="Login Admin:", bg="#cce6ff").pack(pady=5)
+    tk.Label(janela, text="Login Admin:", bg=PRIMARY_BG).pack(pady=5)
     entry_login = ttk.Entry(janela, width=25)
     entry_login.pack(pady=5)
 
-    tk.Label(janela, text="Senha:", bg="#cce6ff").pack(pady=5)
+    tk.Label(janela, text="Senha:", bg=PRIMARY_BG).pack(pady=5)
     entry_senha = ttk.Entry(janela, width=25, show="*")
     entry_senha.pack(pady=5)
 
@@ -217,7 +260,7 @@ def verificar_admin():
         else:
             messagebox.showerror("Erro", "Login ou senha inválidos.")
 
-    ttk.Button(janela, text="Entrar", command=validar_admin).pack(pady=10)
+    styled_button(janela, text="Entrar", command=validar_admin).pack(pady=10)
 
 def adicionar_item(tree_venda):
     codigo = entry_codigo.get().strip()
@@ -383,23 +426,24 @@ def preencher_campos(event):
 def foco_quantidade(event=None):
     entry_quantidade.focus_set()
 
-def escolher_pagamento(tree_venda, perfil):
+def escolher_pagamento(tree_venda, perfil, id_cliente=None):
     # Janela popup
     janela_pagamento = tk.Toplevel()
     janela_pagamento.title("Forma de Pagamento")
     janela_pagamento.geometry("300x250")
-    janela_pagamento.configure(bg="#cce6ff")
+    apply_theme(janela_pagamento)
+    janela_pagamento.configure(bg=PRIMARY_BG)
 
     tk.Label(janela_pagamento, text="Selecione a forma de pagamento:", 
-             font=("Segoe UI", 12, "bold"), bg="#cce6ff").pack(pady=10)
+             font=("Segoe UI", 12, "bold"), bg=PRIMARY_BG).pack(pady=10)
 
     forma_pagamento = tk.StringVar(value="dinheiro")
 
     # Opções
-    tk.Radiobutton(janela_pagamento, text="Dinheiro", variable=forma_pagamento, value="dinheiro", bg="#cce6ff").pack(anchor="w", padx=20)
-    tk.Radiobutton(janela_pagamento, text="Cartão", variable=forma_pagamento, value="cartao", bg="#cce6ff").pack(anchor="w", padx=20)
-    tk.Radiobutton(janela_pagamento, text="Fiado (Crédito)", variable=forma_pagamento, value="fiado", bg="#cce6ff").pack(anchor="w", padx=20)
-    tk.Radiobutton(janela_pagamento, text="Pix", variable=forma_pagamento, value="pix", bg="#cce6ff").pack(anchor="w", padx=20)
+    tk.Radiobutton(janela_pagamento, text="Dinheiro", variable=forma_pagamento, value="dinheiro", bg=PRIMARY_BG).pack(anchor="w", padx=20)
+    tk.Radiobutton(janela_pagamento, text="Cartão", variable=forma_pagamento, value="cartao", bg=PRIMARY_BG).pack(anchor="w", padx=20)
+    tk.Radiobutton(janela_pagamento, text="Fiado (Crédito)", variable=forma_pagamento, value="fiado", bg=PRIMARY_BG).pack(anchor="w", padx=20)
+    tk.Radiobutton(janela_pagamento, text="Pix", variable=forma_pagamento, value="pix", bg=PRIMARY_BG).pack(anchor="w", padx=20)
 
     # Botão confirmar
     def confirmar():
@@ -407,38 +451,39 @@ def escolher_pagamento(tree_venda, perfil):
         janela_pagamento.destroy()
 
         if forma_pagamento.get() == "dinheiro":
-            pagamento_dinheiro(total, perfil, tree_venda)
+            pagamento_dinheiro(total, perfil, tree_venda, id_cliente=id_cliente)
         elif forma_pagamento.get() == "cartao":
-            pagamento_cartao(total, perfil, tree_venda)
+            pagamento_cartao(total, perfil, tree_venda, id_cliente=id_cliente)
         elif forma_pagamento.get() == "fiado":
-            pagamento_fiado(total, perfil, tree_venda)
+            pagamento_fiado(total, perfil, tree_venda, id_cliente=id_cliente)
         else:
-            finalizar_venda(tree_venda, perfil, forma_pagamento.get())
+            finalizar_venda(tree_venda, perfil, forma_pagamento.get(), janela_pagamento, id_cliente=id_cliente)
 
-    tk.Button(janela_pagamento, text="Confirmar", bg="#4CAF50", fg="white",
+    styled_button(janela_pagamento, text="Confirmar", kind="secondary",
               command=confirmar).pack(pady=15)
 
 
-def pagamento_dinheiro(total, perfil, tree_venda):
+def pagamento_dinheiro(total, perfil, tree_venda, id_cliente=None):
     janela_dinheiro = tk.Toplevel()
     janela_dinheiro.title("Pagamento em Dinheiro")
     janela_dinheiro.geometry("350x300")
-    janela_dinheiro.configure(bg="#f0f8ff")
+    apply_theme(janela_dinheiro)
+    janela_dinheiro.configure(bg=SECONDARY_BG)
 
     tk.Label(janela_dinheiro, text=f"Total da compra: R$ {total:.2f}", 
-             font=("Segoe UI", 12, "bold"), bg="#f0f8ff").pack(pady=10)
+             font=("Segoe UI", 12, "bold"), bg=SECONDARY_BG).pack(pady=10)
 
     # Campo para valor recebido
-    tk.Label(janela_dinheiro, text="Valor recebido:", bg="#f0f8ff").pack()
+    tk.Label(janela_dinheiro, text="Valor recebido:", bg=SECONDARY_BG).pack()
     entry_valor = ttk.Entry(janela_dinheiro)
     entry_valor.pack(pady=5)
 
     # Campo para desconto
-    tk.Label(janela_dinheiro, text="Desconto (R$ ou %):", bg="#f0f8ff").pack()
+    tk.Label(janela_dinheiro, text="Desconto (R$ ou %):", bg=SECONDARY_BG).pack()
     entry_desconto = ttk.Entry(janela_dinheiro)
     entry_desconto.pack(pady=5)
 
-    resultado_label = tk.Label(janela_dinheiro, text="", bg="#f0f8ff", fg="blue")
+    resultado_label = tk.Label(janela_dinheiro, text="", bg=SECONDARY_BG, fg=INFO_FG)
     resultado_label.pack(pady=10)
 
     def calcular_troco():
@@ -456,23 +501,22 @@ def pagamento_dinheiro(total, perfil, tree_venda):
 
             troco = valor_recebido - valor_final
             if troco < 0:
-                resultado_label.config(text=f"Valor insuficiente! Faltam R$ {-troco:.2f}", fg="red")
+                resultado_label.config(text=f"Valor insuficiente! Faltam R$ {-troco:.2f}", fg=ERROR_FG)
                 confirmar_btn.config(state="disabled")
             else:
-                resultado_label.config(text=f"Troco: R$ {troco:.2f}", fg="green")
+                resultado_label.config(text=f"Troco: R$ {troco:.2f}", fg=SUCCESS_FG)
                 confirmar_btn.config(state="normal")
         except ValueError:
             messagebox.showwarning("Erro", "Digite valores válidos!")
 
     def confirmar_pagamento():
         # Só confirma se o botão estiver habilitado
-        finalizar_venda(tree_venda, perfil, "dinheiro", janela_dinheiro)
+        finalizar_venda(tree_venda, perfil, "dinheiro", janela_dinheiro, id_cliente=id_cliente)
 
-    tk.Button(janela_dinheiro, text="Calcular Troco", bg="#2196F3", fg="white",
-              command=calcular_troco).pack(pady=10)
+    styled_button(janela_dinheiro, text="Calcular Troco", kind="info", command=calcular_troco).pack(pady=10)
 
-    confirmar_btn = tk.Button(janela_dinheiro, text="Confirmar Pagamento",
-                              bg="#4CAF50", fg="white",
+    confirmar_btn = styled_button(janela_dinheiro, text="Confirmar Pagamento",
+                              kind="secondary",
                               command=confirmar_pagamento, state="disabled")
     confirmar_btn.pack(pady=15)
 
@@ -484,23 +528,26 @@ def calcular_total(tree_venda):
         total += subtotal
     return total
 
-def pagamento_cartao(total, perfil, tree_venda):
+def pagamento_cartao(total, perfil, tree_venda, id_cliente=None):
     janela_cartao = tk.Toplevel()
     janela_cartao.title("Pagamento com Cartão")
     janela_cartao.geometry("350x250")
-    janela_cartao.configure(bg="#f0f8ff")
+    apply_theme(janela_cartao)
+    janela_cartao.configure(bg=SECONDARY_BG)
 
     tk.Label(janela_cartao, text=f"Total da compra: R$ {total:.2f}",
-             font=("Segoe UI", 12, "bold"), bg="#f0f8ff").pack(pady=10)
+             font=("Segoe UI", 12, "bold"), bg=SECONDARY_BG).pack(pady=10)
 
     # Escolha do tipo de cartão
-    tk.Label(janela_cartao, text="Selecione o tipo de cartão:", bg="#f0f8ff").pack()
+    tk.Label(janela_cartao, text="Selecione o tipo de cartão:", bg=SECONDARY_BG).pack()
     tipo_cartao = tk.StringVar(value="crédito")
-    ttk.Radiobutton(janela_cartao, text="Crédito", variable=tipo_cartao, value="crédito").pack()
-    ttk.Radiobutton(janela_cartao, text="Débito", variable=tipo_cartao, value="débito").pack()
+    tk.Radiobutton(janela_cartao, text="Crédito", variable=tipo_cartao, value="crédito",
+                   bg=SECONDARY_BG, activebackground=SECONDARY_BG, selectcolor=SECONDARY_BG).pack()
+    tk.Radiobutton(janela_cartao, text="Débito", variable=tipo_cartao, value="débito",
+                   bg=SECONDARY_BG, activebackground=SECONDARY_BG, selectcolor=SECONDARY_BG).pack()
 
     # Campo opcional para código de autorização
-    tk.Label(janela_cartao, text="Código de autorização (opcional):", bg="#f0f8ff").pack()
+    tk.Label(janela_cartao, text="Código de autorização (opcional):", bg=SECONDARY_BG).pack()
     entry_codigo = ttk.Entry(janela_cartao)
     entry_codigo.pack(pady=5)
 
@@ -511,44 +558,107 @@ def pagamento_cartao(total, perfil, tree_venda):
             messagebox.showinfo("Pagamento aprovado", f"Compra registrada com {forma}.\nAutorização: {codigo}")
         else:
             messagebox.showinfo("Pagamento aprovado", f"Compra registrada com {forma}.")
-        finalizar_venda(tree_venda, perfil, forma, janela_cartao)
+        finalizar_venda(tree_venda, perfil, forma, janela_cartao, id_cliente=id_cliente)
 
-    tk.Button(janela_cartao, text="Confirmar Pagamento", bg="#4CAF50", fg="white",
+    styled_button(janela_cartao, text="Confirmar Pagamento", kind="secondary",
               command=confirmar_pagamento).pack(pady=15)
 
-def pagamento_fiado(total, perfil, tree_venda):
+def pagamento_fiado(total, perfil, tree_venda, id_cliente=None):
     janela_fiado = tk.Toplevel()
     janela_fiado.title("Pagamento Fiado")
-    janela_fiado.geometry("400x250")
-    janela_fiado.configure(bg="#f0f8ff")
+    janela_fiado.geometry("450x320")
+    apply_theme(janela_fiado)
+    janela_fiado.configure(bg=SECONDARY_BG)
 
     tk.Label(janela_fiado, text=f"Total da compra: R$ {total:.2f}",
-             font=("Segoe UI", 12, "bold"), bg="#f0f8ff").pack(pady=10)
+             font=("Segoe UI", 12, "bold"), bg=SECONDARY_BG).pack(pady=10)
 
-    # Seleção do cliente
-    tk.Label(janela_fiado, text="Cliente (nome ou CPF):", bg="#f0f8ff").pack()
-    entry_cliente = ttk.Entry(janela_fiado)
+    cliente_id = {"id": id_cliente}
+
+    label_cliente = tk.Label(janela_fiado, text="Cliente não selecionado", bg=SECONDARY_BG)
+    label_cliente.pack(pady=5)
+
+    if cliente_id["id"]:
+        cursor.execute("SELECT nome, cpf FROM Cliente WHERE id_cliente = ?", (cliente_id["id"],))
+        row = cursor.fetchone()
+        if row:
+            label_cliente.config(text=f"Cliente selecionado: {row[0]} - {row[1]}")
+
+    tk.Label(janela_fiado, text="Cliente (nome ou CPF):", bg=SECONDARY_BG).pack()
+    entry_cliente = ttk.Entry(janela_fiado, width=40)
     entry_cliente.pack(pady=5)
 
-    def confirmar_fiado():
-        cliente = entry_cliente.get().strip()
-        if not cliente:
-            messagebox.showwarning("Erro", "Informe o cliente!")
+    def buscar_cliente_por_texto():
+        busca = entry_cliente.get().strip()
+        if not busca:
+            messagebox.showwarning("Erro", "Informe o nome ou CPF do cliente!")
             return
 
-        # Busca cliente no banco
-        cursor.execute("SELECT id_cliente FROM Cliente WHERE nome = ? OR cpf = ?", (cliente, cliente))
+        cursor.execute("SELECT id_cliente, nome, cpf FROM Cliente WHERE nome = ? OR cpf = ?", (busca, busca))
         resultado = cursor.fetchone()
-
         if resultado:
-            id_cliente = resultado[0]
+            cliente_id["id"] = resultado[0]
+            label_cliente.config(text=f"Cliente selecionado: {resultado[1]} - {resultado[2]}")
         else:
             messagebox.showwarning("Erro", "Cliente não encontrado! Cadastre primeiro.")
-            return
+
+    def selecionar_cliente_popup():
+        popup = tk.Toplevel(janela_fiado)
+        popup.title("Selecionar Cliente para Fiado")
+        popup.geometry("560x380")
+        apply_theme(popup)
+        popup.configure(bg=PRIMARY_BG)
+        popup.transient(janela_fiado)
+        popup.grab_set()
+
+        frame = tk.Frame(popup, bg=PRIMARY_BG)
+        frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        cols = ("id_cliente", "nome", "cpf")
+        tree = ttk.Treeview(frame, columns=cols, show="headings", height=12)
+        tree.heading("id_cliente", text="ID")
+        tree.heading("nome", text="Nome")
+        tree.heading("cpf", text="CPF")
+        tree.column("id_cliente", width=80, anchor="center")
+        tree.column("nome", width=260)
+        tree.column("cpf", width=180, anchor="center")
+        tree.pack(fill="both", expand=True, side="left")
+
+        scrollbar = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
+        tree.configure(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side="right", fill="y")
+
+        cursor.execute("SELECT id_cliente, nome, cpf FROM Cliente ORDER BY nome")
+        for cliente in cursor.fetchall():
+            tree.insert("", "end", values=cliente)
+
+        def confirmar_selecao():
+            sel = tree.selection()
+            if not sel:
+                messagebox.showwarning("Atenção", "Selecione um cliente.")
+                return
+            valores = tree.item(sel[0], "values")
+            cliente_id["id"] = int(valores[0])
+            label_cliente.config(text=f"Cliente selecionado: {valores[1]} - {valores[2]}")
+            popup.destroy()
+
+        styled_button(popup, text="Selecionar", kind="secondary", command=confirmar_selecao).pack(pady=10)
+        popup.wait_window()
+
+    def confirmar_fiado():
+        if cliente_id["id"] is None:
+            buscar_cliente_por_texto()
+            if cliente_id["id"] is None:
+                return
 
         # Finaliza venda com forma_pagamento = fiado
-        finalizar_venda(tree_venda, perfil, "fiado", janela_fiado, id_cliente=id_cliente)
+        finalizar_venda(tree_venda, perfil, "fiado", janela_fiado, id_cliente=cliente_id["id"])
 
-    tk.Button(janela_fiado, text="Confirmar Fiado", bg="#4CAF50", fg="white",
+    frame_actions = tk.Frame(janela_fiado, bg=SECONDARY_BG)
+    frame_actions.pack(pady=10)
+    styled_button(frame_actions, text="Buscar Cliente", kind="primary", command=buscar_cliente_por_texto).pack(side="left", padx=5)
+    styled_button(frame_actions, text="Selecionar Cliente", kind="primary", command=selecionar_cliente_popup).pack(side="left", padx=5)
+
+    styled_button(janela_fiado, text="Confirmar Fiado", kind="secondary",
               command=confirmar_fiado).pack(pady=15)
 

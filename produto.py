@@ -6,6 +6,7 @@ import csv
 import uuid
 from datetime import date
 from db import conexao, cursor
+from ui_theme import apply_theme, styled_button, PRIMARY_BG, SECONDARY_BG, SUCCESS_FG, ERROR_FG
 
 def normalizar_data(data_str):
     formatos = ["%Y-%m-%d", "%Y/%m/%d", "%d/%m/%Y", "%d-%m-%Y"]
@@ -25,7 +26,7 @@ def cadastrar_produto(parent=None, perfil=None):
     janela = tk.Toplevel(parent)
     janela.title("Cadastro de Produto")
     janela.state("zoomed")  # abre maximizada
-    janela.configure(bg="#cce6ff")
+    apply_theme(janela)
 
     def fechar_janela():
         if parent and parent.winfo_exists():
@@ -68,7 +69,7 @@ def cadastrar_produto(parent=None, perfil=None):
     ttk.Label(janela, text="Quantidade:").pack(pady=5)
     entry_quantidade = ttk.Entry(janela, width=40); entry_quantidade.pack(pady=5)
 
-    status_label = ttk.Label(janela, text="", foreground="green")
+    status_label = ttk.Label(janela, text="", foreground=SUCCESS_FG)
     status_label.pack(pady=10)
 
 
@@ -76,7 +77,7 @@ def cadastrar_produto(parent=None, perfil=None):
     def buscar_produto_por_codigo():
         codigo = entry_codigo.get().strip()
         if not codigo:
-            status_label.config(text=f"Informe o código de barras.", foreground="green")
+            status_label.config(text=f"Informe o código de barras.", foreground=SUCCESS_FG)
             return
         cursor.execute("SELECT * FROM Produto WHERE codigo_barras = ?", (codigo,))
         produto = cursor.fetchone()
@@ -88,10 +89,10 @@ def cadastrar_produto(parent=None, perfil=None):
             entry_apresentacao.delete(0, tk.END); entry_apresentacao.insert(0, produto[3])
             entry_dosagem.delete(0, tk.END); entry_dosagem.insert(0, produto[4])
             entry_fabricante.delete(0, tk.END); entry_fabricante.insert(0, produto[5])
-            status_label.config(text=f"Produto encontrado. Informe os dados do lote.", foreground="green")
+            status_label.config(text=f"Produto encontrado. Informe os dados do lote.", foreground=SUCCESS_FG)
 
         else:
-            status_label.config(text=f"Produto não encontrado. Preencha todos os campos.", foreground="green")
+            status_label.config(text=f"Produto não encontrado. Preencha todos os campos.", foreground=SUCCESS_FG)
 
 
     def salvar_produto():
@@ -99,7 +100,7 @@ def cadastrar_produto(parent=None, perfil=None):
         preco = float(entry_preco.get().replace(",", "."))
         quantidade = int(entry_quantidade.get())
      except ValueError:
-        status_label.config(text="Erro: preço ou quantidade inválidos.", foreground="red")
+        status_label.config(text="Erro: preço ou quantidade inválidos.", foreground=ERROR_FG)
         return
 
      codigo = entry_codigo.get().strip()
@@ -112,7 +113,7 @@ def cadastrar_produto(parent=None, perfil=None):
      try:
       validade = normalizar_data(entry_validade.get().strip())
      except ValueError:
-      status_label.config(text="Erro: formato de data inválido.", foreground="red")
+      status_label.config(text="Erro: formato de data inválido.", foreground=ERROR_FG)
       return
      lote = entry_lote.get().strip()
 
@@ -142,7 +143,7 @@ def cadastrar_produto(parent=None, perfil=None):
         conexao.commit()
 
         # mostra mensagem na tela
-        status_label.config(text=f"Produto e lote cadastrados! Lote: {lote}", foreground="green")
+        status_label.config(text=f"Produto e lote cadastrados! Lote: {lote}", foreground=SUCCESS_FG)
 
         # limpa os campos
         entry_codigo.delete(0, tk.END)
@@ -157,13 +158,13 @@ def cadastrar_produto(parent=None, perfil=None):
         entry_quantidade.delete(0, tk.END)
 
      except Exception as e:
-        status_label.config(text=f"Erro ao salvar: {e}", foreground="red")
+        status_label.config(text=f"Erro ao salvar: {e}", foreground=ERROR_FG)
     
 
 
     # --- Botões ---
-    ttk.Button(janela, text="Buscar Produto", command=buscar_produto_por_codigo).pack(pady=5)
-    ttk.Button(janela, text="Salvar", command=salvar_produto).pack(pady=20)
+    styled_button(janela, text="Buscar Produto", kind="primary", command=buscar_produto_por_codigo).pack(pady=5)
+    styled_button(janela, text="Salvar", kind="secondary", command=salvar_produto).pack(pady=20)
 
 # --- CADASTRO EM LOTE VIA TREEVIEW ---
 def cadastrar_produtos_treeview(parent=None, perfil=None):
@@ -173,7 +174,7 @@ def cadastrar_produtos_treeview(parent=None, perfil=None):
     janela = tk.Toplevel(parent)
     janela.title("Cadastro em Lote - Treeview")
     janela.state("zoomed")  # abre maximizada
-    janela.configure(bg="#cce6ff")
+    apply_theme(janela)
 
     def fechar_janela():
         if parent and parent.winfo_exists():
@@ -183,7 +184,7 @@ def cadastrar_produtos_treeview(parent=None, perfil=None):
     janela.protocol("WM_DELETE_WINDOW", fechar_janela)
 
     # --- Formulário de entrada ---
-    form_frame = tk.Frame(janela, bg="#cce6ff")
+    form_frame = tk.Frame(janela, bg=PRIMARY_BG)
     form_frame.pack(fill="x", pady=10)
 
     labels = [
@@ -217,14 +218,14 @@ def cadastrar_produtos_treeview(parent=None, perfil=None):
     tree.pack(fill="both", expand=True, pady=10)
 
     # --- Label de status ---
-    status_label = ttk.Label(janela, text="", foreground="green", background="#cce6ff")
+    status_label = ttk.Label(janela, text="", foreground=SUCCESS_FG, background=PRIMARY_BG)
     status_label.pack(pady=5)
 
     # --- Funções ---
     def buscar_produto_por_codigo():
         codigo = entries["Código de Barras"].get().strip()
         if not codigo:
-            status_label.config(text="Informe o código de barras.", foreground="red")
+            status_label.config(text="Informe o código de barras.", foreground=ERROR_FG)
             return
         
         cursor.execute("SELECT * FROM Produto WHERE codigo_barras = ?", (codigo,))
@@ -237,23 +238,23 @@ def cadastrar_produtos_treeview(parent=None, perfil=None):
             entries["Apresentação"].delete(0, tk.END); entries["Apresentação"].insert(0, produto[3])
             entries["Dosagem"].delete(0, tk.END); entries["Dosagem"].insert(0, produto[4])
             entries["Fabricante"].delete(0, tk.END); entries["Fabricante"].insert(0, produto[5])
-            status_label.config(text="Produto encontrado. Informe os dados do lote.", foreground="green")
+            status_label.config(text="Produto encontrado. Informe os dados do lote.", foreground=SUCCESS_FG)
         else:
-            status_label.config(text="Produto não encontrado. Preencha todos os campos.", foreground="red")
+            status_label.config(text="Produto não encontrado. Preencha todos os campos.", foreground=ERROR_FG)
 
     def adicionar_produto():
         try:
             preco = float(entries["Preço"].get().replace(",", "."))
             quantidade = int(entries["Quantidade"].get())
         except ValueError:
-            status_label.config(text="Erro: preço ou quantidade inválidos.", foreground="red")
+            status_label.config(text="Erro: preço ou quantidade inválidos.", foreground=ERROR_FG)
             return
 
 
         try:
          validade = normalizar_data(entries["Validade (AAAA-MM-DD)"].get().strip())
         except ValueError:
-         status_label.config(text="Erro: formato de data inválido.", foreground="red")
+         status_label.config(text="Erro: formato de data inválido.", foreground=ERROR_FG)
          return
 
         valores = (
@@ -270,12 +271,9 @@ def cadastrar_produtos_treeview(parent=None, perfil=None):
         )
 
         if not valores[0] or not valores[1] or not valores[2]:
-            status_label.config(text="Preencha os campos obrigatórios!", foreground="red")
+            status_label.config(text="Preencha os campos obrigatórios!", foreground=ERROR_FG)
             return
-        
-        
 
-        tree.insert("", tk.END, values=valores)
 
         # limpa os campos
         for entry in entries.values():
@@ -284,7 +282,7 @@ def cadastrar_produtos_treeview(parent=None, perfil=None):
             else:
                 entry.delete(0, tk.END)
 
-        status_label.config(text="Produto adicionado à lista.", foreground="green")
+        status_label.config(text="Produto adicionado à lista.", foreground=SUCCESS_FG)
 
     def salvar_todos():
         erros = []
@@ -320,9 +318,9 @@ def cadastrar_produtos_treeview(parent=None, perfil=None):
        
 
         if erros:
-            status_label.config(text=f"Erros ao salvar: {', '.join(erros)}", foreground="red")
+            status_label.config(text=f"Erros ao salvar: {', '.join(erros)}", foreground=ERROR_FG)
         else:
-            status_label.config(text="Todos os produtos foram cadastrados com sucesso!", foreground="green")
+            status_label.config(text="Todos os produtos foram cadastrados com sucesso!", foreground=SUCCESS_FG)
             # limpa a treeview após salvar
             for item in tree.get_children():
              tree.delete(item)
@@ -331,7 +329,7 @@ def cadastrar_produtos_treeview(parent=None, perfil=None):
     def editar_produto():
      selecionado = tree.selection()
      if not selecionado:
-        status_label.config(text="Selecione um produto para editar.", foreground="red")
+        status_label.config(text="Selecione um produto para editar.", foreground=ERROR_FG)
         return
      item = selecionado[0]
      valores = tree.item(item)["values"]
@@ -340,7 +338,7 @@ def cadastrar_produtos_treeview(parent=None, perfil=None):
      edit_win = tk.Toplevel(janela)
      edit_win.title("Editar Produto")
      edit_win.geometry("400x500")
-     edit_win.configure(bg="#cce6ff")
+     apply_theme(edit_win)
 
      novos_valores = []
      for i, campo in enumerate(labels):
@@ -354,18 +352,18 @@ def cadastrar_produtos_treeview(parent=None, perfil=None):
         atualizados = [e.get() for e in novos_valores]
         tree.item(item, values=atualizados)
         edit_win.destroy()
-        status_label.config(text="Produto atualizado na lista.", foreground="green")
+        status_label.config(text="Produto atualizado na lista.", foreground=SUCCESS_FG)
 
-     ttk.Button(edit_win, text="Salvar Alterações", command=salvar_edicao).grid(row=len(labels), columnspan=2, pady=10)
+     styled_button(edit_win, text="Salvar Alterações", kind="secondary", command=salvar_edicao).grid(row=len(labels), columnspan=2, pady=10)
      
     # --- Botões ---
-    botoes_frame = tk.Frame(janela, bg="#cce6ff")
+    botoes_frame = tk.Frame(janela, bg=PRIMARY_BG)
     botoes_frame.pack(fill="x", pady=10)
 
-    ttk.Button(botoes_frame, text="Buscar Produto", command=buscar_produto_por_codigo).pack(side="left", padx=10)
-    ttk.Button(botoes_frame, text="Adicionar Produto", command=adicionar_produto).pack(side="left", padx=10)
-    ttk.Button(botoes_frame, text="Salvar Todos", command=salvar_todos).pack(side="left", padx=10)
-    ttk.Button(botoes_frame, text="Editar Produto", command=editar_produto).pack(side="left", padx=10)
+    styled_button(botoes_frame, text="Buscar Produto", kind="primary", command=buscar_produto_por_codigo).pack(side="left", padx=10)
+    styled_button(botoes_frame, text="Adicionar Produto", kind="secondary", command=adicionar_produto).pack(side="left", padx=10)
+    styled_button(botoes_frame, text="Salvar Todos", kind="secondary", command=salvar_todos).pack(side="left", padx=10)
+    styled_button(botoes_frame, text="Editar Produto", kind="primary", command=editar_produto).pack(side="left", padx=10)
 
         # --- Integração com leitor de código de barras ---
     # Quando o leitor enviar ENTER, chama a busca automaticamente
@@ -387,7 +385,7 @@ def cadastrar_produtos_fornecedor(parent=None, perfil=None):
 
     janela.protocol("WM_DELETE_WINDOW", fechar_janela)
 
-    status_label = ttk.Label(janela, text="", foreground="green")
+    status_label = ttk.Label(janela, text="", foreground=SUCCESS_FG, background=PRIMARY_BG)
     status_label.pack(pady=5)
 
     # --- Treeview com coluna extra de preço de custo e preço de venda ---
@@ -417,19 +415,19 @@ def cadastrar_produtos_fornecedor(parent=None, perfil=None):
                     row.append(row[-1])  # duplica preco_custo como preco_venda
                     tree.insert("", tk.END, values=row)
 
-            status_label.config(text="Produtos importados do fornecedor!", foreground="green")
+            status_label.config(text="Produtos importados do fornecedor!", foreground=SUCCESS_FG)
 
             #---Força o foco de volta para a janela de cadastro---
             janela.lift()  # traz a janela para frente
             janela.focus_force()
 
         except Exception as e:
-            status_label.config(text=f"Erro ao importar CSV: {e}", foreground="red")
+            status_label.config(text=f"Erro ao importar CSV: {e}", foreground=ERROR_FG)
 
     def editar_produto():
         selecionado = tree.selection()
         if not selecionado:
-            status_label.config(text="Selecione um produto para editar.", foreground="red")
+            status_label.config(text="Selecione um produto para editar.", foreground=ERROR_FG)
             return
         item = selecionado[0]
         valores = tree.item(item)["values"]
@@ -438,7 +436,7 @@ def cadastrar_produtos_fornecedor(parent=None, perfil=None):
         edit_win = tk.Toplevel(janela)
         edit_win.title("Editar Produto Fornecedor")
         edit_win.geometry("500x600")
-        edit_win.configure(bg="#cce6ff")
+        apply_theme(edit_win)
 
         novos_valores = []
         for i, col in enumerate(colunas):
@@ -452,9 +450,9 @@ def cadastrar_produtos_fornecedor(parent=None, perfil=None):
             atualizados = [e.get() for e in novos_valores]
             tree.item(item, values=atualizados)
             edit_win.destroy()
-            status_label.config(text="Produto atualizado na lista.", foreground="green")
+            status_label.config(text="Produto atualizado na lista.", foreground=SUCCESS_FG)
 
-        ttk.Button(edit_win, text="Salvar Alterações", command=salvar_edicao).grid(row=len(colunas), columnspan=2, pady=10)
+        styled_button(edit_win, text="Salvar Alterações", kind="secondary", command=salvar_edicao).grid(row=len(colunas), columnspan=2, pady=10)
 
 
     # --- Aplicar margem de lucro ---
@@ -463,7 +461,7 @@ def cadastrar_produtos_fornecedor(parent=None, perfil=None):
         margem_win = tk.Toplevel(janela)
         margem_win.title("Definir Margem de Lucro")
         margem_win.geometry("300x150")
-        margem_win.configure(bg="#cce6ff")
+        apply_theme(margem_win)
 
         ttk.Label(margem_win, text="Informe a margem (%)").pack(pady=10)
         entry_margem = ttk.Entry(margem_win, width=10)
@@ -478,12 +476,12 @@ def cadastrar_produtos_fornecedor(parent=None, perfil=None):
                     preco_venda = preco_custo * (1 + valor/100)
                     valores[-1] = round(preco_venda, 2)
                     tree.item(item, values=valores)
-                status_label.config(text=f"Margem de {valor}% aplicada com sucesso!", foreground="green")
+                status_label.config(text=f"Margem de {valor}% aplicada com sucesso!", foreground=SUCCESS_FG)
                 margem_win.destroy()
             except Exception as e:
-                status_label.config(text=f"Erro ao aplicar margem: {e}", foreground="red")
+                status_label.config(text=f"Erro ao aplicar margem: {e}", foreground=ERROR_FG)
 
-        ttk.Button(margem_win, text="Aplicar", command=aplicar).pack(pady=10)
+        styled_button(margem_win, text="Aplicar", kind="secondary", command=aplicar).pack(pady=10)
 
 
     # --- Salvar no banco (sem preço de custo) ---
@@ -533,19 +531,19 @@ def cadastrar_produtos_fornecedor(parent=None, perfil=None):
 
         conexao.commit()  # commit após inserir todos os produtos e lotes
         if erros:
-            status_label.config(text=f"Erros ao salvar: {', '.join(erros)}", foreground="red")
+            status_label.config(text=f"Erros ao salvar: {', '.join(erros)}", foreground=ERROR_FG)
         else:
-            status_label.config(text="Todos os produtos foram cadastrados com sucesso!", foreground="green")
+            status_label.config(text="Todos os produtos foram cadastrados com sucesso!", foreground=SUCCESS_FG)
             for item in tree.get_children():
                 tree.delete(item)
 
     # --- Botões ---
-    botoes_frame = tk.Frame(janela)
+    botoes_frame = tk.Frame(janela, bg=PRIMARY_BG)
     botoes_frame.pack(fill="x", pady=10)
 
-    ttk.Button(botoes_frame, text="Selecionar Arquivo Fornecedor", command=importar_csv).pack(side="left", padx=10)
-    ttk.Button(botoes_frame, text="Salvar Todos", command=salvar_todos).pack(side="left", padx=10)
-    ttk.Button(botoes_frame, text="Editar Produto", command=editar_produto).pack(side="left", padx=10)
+    styled_button(botoes_frame, text="Selecionar Arquivo Fornecedor", kind="primary", command=importar_csv).pack(side="left", padx=10)
+    styled_button(botoes_frame, text="Salvar Todos", kind="secondary", command=salvar_todos).pack(side="left", padx=10)
+    styled_button(botoes_frame, text="Editar Produto", kind="primary", command=editar_produto).pack(side="left", padx=10)
 
     # Botões para aplicar margem
     ttk.Button(botoes_frame, text="Definir Margem de Lucro", command=definir_margem).pack(side="left", padx=10)
