@@ -48,6 +48,7 @@ def tela_principal(id_usuario):
     menu_cadastro = tk.Menu(menubar, tearoff=0)
     # Chamada direta da função de cadastro de produto (passa janela principal e id do usuário)
     menu_cadastro.add_command(label="Cadastro de produto", command=lambda: cadastrar_produtos_treeview(principal, id_usuario))
+    menu_cadastro.add_command(label="Cadastro de produto (fornecedor)", command=lambda: cadastrar_produtos_fornecedor(principal, id_usuario))
 
 
     menubar.add_cascade(label="Cadastro", menu=menu_cadastro)

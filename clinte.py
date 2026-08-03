@@ -2,7 +2,7 @@ import tkinter as tk
 import sqlite3
 from tkinter import ttk, messagebox
 from db import conexao, cursor
-from ui_theme import apply_theme, styled_button, maximize_window, restore_window, PRIMARY_BG, HEADER_BG, HEADER_FG, SECONDARY_BG, TREE_ALT_BG, TEXT_PRIMARY_FG, TREE_SEL_BG, BUTTON_TEXT_FG
+from ui_theme import apply_theme, styled_button, maximize_window, restore_window, remember_window_state, PRIMARY_BG, HEADER_BG, HEADER_FG, SECONDARY_BG, TREE_ALT_BG, TEXT_PRIMARY_FG, TREE_SEL_BG, BUTTON_TEXT_FG, ROW_BG, TREE_BG
 
 
 class ClienteCadastro:
@@ -132,6 +132,17 @@ class ClienteCadastro:
                 """, (nome, cpf, telefone, email, endereco, permite_fiado, limite_fiado, self.cliente_id))
                 conexao.commit()
                 messagebox.showinfo("Sucesso", f"Cliente {nome} atualizado com sucesso.")
+                # Se um callback on_saved foi fornecido (ex.: listagem), atualiza a lista
+                if self.on_saved:
+                    try:
+                        self.on_saved()
+                    except Exception:
+                        pass
+                # Fecha a janela de edição e restaura a janela pai
+                try:
+                    self._on_close()
+                except Exception:
+                    pass
             else:
                 cursor.execute("""
                     INSERT INTO Cliente (nome, cpf, telefone, email, endereco, permite_fiado, limite_fiado)
@@ -158,6 +169,7 @@ class ClienteCadastro:
 
 def cadastrar_cliente(master=None):
     if master and master.winfo_exists():
+        remember_window_state(master)
         master.withdraw()
     ClienteCadastro(master, on_close=lambda: restore_window(master) if master and master.winfo_exists() else None)
 
@@ -166,12 +178,14 @@ def editar_cliente(master=None, cliente_id=None, on_saved=None):
     if cliente_id is None:
         return
     if master and master.winfo_exists():
+        remember_window_state(master)
         master.withdraw()
     ClienteCadastro(master, cliente_id, on_saved=on_saved, on_close=lambda: restore_window(master) if master and master.winfo_exists() else None)
 
 
 def listar_clientes(master=None):
     if master and master.winfo_exists():
+        remember_window_state(master)
         master.withdraw()
 
     janela = tk.Toplevel(master)
