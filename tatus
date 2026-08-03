@@ -1,0 +1,51 @@
+[1mdiff --git a/admin.py b/admin.py[m
+[1mindex e3b7556..55ca746 100644[m
+[1m--- a/admin.py[m
+[1m+++ b/admin.py[m
+[36m@@ -1,12 +1,13 @@[m
+ import tkinter as tk[m
+ from tkinter import ttk, messagebox[m
+ import sqlite3[m
+[31m-from clinte import cadastrar_cliente[m
+[32m+[m[32mfrom cliente import cadastrar_cliente[m
+ from db import conexao, cursor[m
+[31m-from ui_theme import apply_theme, styled_button, maximize_window, restore_window, PRIMARY_BG, HEADER_BG, HEADER_FG, SECONDARY_BG[m
+[32m+[m[32mfrom ui_theme import apply_theme, styled_button, maximize_window, restore_window, remember_window_state, PRIMARY_BG, HEADER_BG, HEADER_FG, SECONDARY_BG[m
+ [m
+ def abrir_funcoes_admin(parent=None):[m
+     if parent and parent.winfo_exists():[m
+[32m+[m[32m        remember_window_state(parent)[m
+         parent.withdraw()[m
+ [m
+     admin = tk.Toplevel(parent)[m
+[36m@@ -35,6 +36,7 @@[m [mdef abrir_funcoes_admin(parent=None):[m
+ [m
+ def abrir_cadastro_usuario(parent=None):[m
+     if parent and parent.winfo_exists():[m
+[32m+[m[32m        remember_window_state(parent)[m
+         parent.withdraw()[m
+ [m
+     cadastro = tk.Toplevel(parent)[m
+[36m@@ -84,6 +86,7 @@[m [mdef abrir_cadastro_usuario(parent=None):[m
+ [m
+ def alterar_admin(parent=None):[m
+     if parent and parent.winfo_exists():[m
+[32m+[m[32m        remember_window_state(parent)[m
+         parent.withdraw()[m
+ [m
+     janela = tk.Toplevel(parent)[m
+[1mdiff --git a/principal.py b/principal.py[m
+[1mindex 73a61b6..03e4aa8 100644[m
+[1m--- a/principal.py[m
+[1m+++ b/principal.py[m
+[36m@@ -1,9 +1,8 @@[m
+ import tkinter as tk[m
+ from tkinter import ttk, messagebox[m
+[31m-from tkinter import ttk[m
+ import sqlite3[m
+ from admin import abrir_funcoes_admin[m
+[31m-from clinte import cadastrar_cliente, listar_clientes[m
+[32m+[m[32mfrom cliente import cadastrar_cliente, listar_clientes[m
+ from produto import cadastrar_produto[m
+ from produto import cadastrar_produtos_treeview [m
+ #---from produto import cadastrar_produtos_csvgit[m
