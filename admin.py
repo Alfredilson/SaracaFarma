@@ -1,12 +1,13 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
-from clinte import cadastrar_cliente
+from cliente import cadastrar_cliente
 from db import conexao, cursor
-from ui_theme import apply_theme, styled_button, maximize_window, restore_window, PRIMARY_BG, HEADER_BG, HEADER_FG, SECONDARY_BG
+from ui_theme import apply_theme, styled_button, maximize_window, restore_window, remember_window_state, PRIMARY_BG, HEADER_BG, HEADER_FG, SECONDARY_BG
 
 def abrir_funcoes_admin(parent=None):
     if parent and parent.winfo_exists():
+        remember_window_state(parent)
         parent.withdraw()
 
     admin = tk.Toplevel(parent)
@@ -35,6 +36,7 @@ def abrir_funcoes_admin(parent=None):
 
 def abrir_cadastro_usuario(parent=None):
     if parent and parent.winfo_exists():
+        remember_window_state(parent)
         parent.withdraw()
 
     cadastro = tk.Toplevel(parent)
@@ -84,6 +86,7 @@ def abrir_cadastro_usuario(parent=None):
 
 def alterar_admin(parent=None):
     if parent and parent.winfo_exists():
+        remember_window_state(parent)
         parent.withdraw()
 
     janela = tk.Toplevel(parent)

@@ -1,9 +1,8 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-from tkinter import ttk
 import sqlite3
 from admin import abrir_funcoes_admin
-from clinte import cadastrar_cliente, listar_clientes
+from cliente import cadastrar_cliente, listar_clientes
 from produto import cadastrar_produto
 from produto import cadastrar_produtos_treeview 
 #---from produto import cadastrar_produtos_csvgit
