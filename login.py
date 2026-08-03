@@ -4,7 +4,7 @@ import sqlite3
 from principal import tela_principal   # importa a tela principal
 import os
 from db import conexao, cursor
-from ui_theme import apply_theme, styled_button, PRIMARY_BG, HEADER_BG, HEADER_FG, BUTTON_TEXT_FG, BUTTON_PRIMARY_BG, BUTTON_SECONDARY_BG, INPUT_BG
+from ui_theme import apply_theme, styled_button, maximize_window, PRIMARY_BG, HEADER_BG, HEADER_FG, BUTTON_TEXT_FG, BUTTON_PRIMARY_BG, BUTTON_SECONDARY_BG, INPUT_BG
 
 def inicializar_banco():
     db_file = "saracaFarma.db"
@@ -57,6 +57,7 @@ root = tk.Tk()
 root.title("SaracaFarma - Login")
 root.geometry("420x280")
 apply_theme(root)
+maximize_window(root)
 
 barra = tk.Frame(root, bg=HEADER_BG, height=50)
 barra.pack(fill="x")

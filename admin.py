@@ -3,7 +3,7 @@ from tkinter import ttk, messagebox
 import sqlite3
 from clinte import cadastrar_cliente
 from db import conexao, cursor
-from ui_theme import apply_theme, styled_button, PRIMARY_BG, HEADER_BG, HEADER_FG, SECONDARY_BG
+from ui_theme import apply_theme, styled_button, maximize_window, restore_window, PRIMARY_BG, HEADER_BG, HEADER_FG, SECONDARY_BG
 
 def abrir_funcoes_admin(parent=None):
     if parent and parent.winfo_exists():
@@ -13,10 +13,11 @@ def abrir_funcoes_admin(parent=None):
     admin.title("Funções Administrativas")
     admin.geometry("420x300")
     apply_theme(admin)
+    maximize_window(admin)
 
     def fechar_admin():
         if parent and parent.winfo_exists():
-            parent.deiconify()
+            restore_window(parent)
         admin.destroy()
 
     admin.protocol("WM_DELETE_WINDOW", fechar_admin)
@@ -40,10 +41,11 @@ def abrir_cadastro_usuario(parent=None):
     cadastro.title("Cadastro de Usuário")
     cadastro.geometry("420x400")
     apply_theme(cadastro)
+    maximize_window(cadastro)
 
     def fechar_cadastro():
         if parent and parent.winfo_exists():
-            parent.deiconify()
+            restore_window(parent)
         cadastro.destroy()
 
     cadastro.protocol("WM_DELETE_WINDOW", fechar_cadastro)
@@ -88,10 +90,11 @@ def alterar_admin(parent=None):
     janela.title("Alterar dados do Admin")
     janela.geometry("420x300")
     apply_theme(janela)
+    maximize_window(janela)
 
     def fechar_alteracao():
         if parent and parent.winfo_exists():
-            parent.deiconify()
+            restore_window(parent)
         janela.destroy()
 
     janela.protocol("WM_DELETE_WINDOW", fechar_alteracao)

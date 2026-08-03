@@ -6,7 +6,7 @@ import csv
 import uuid
 from datetime import date
 from db import conexao, cursor
-from ui_theme import apply_theme, styled_button, PRIMARY_BG, SECONDARY_BG, SUCCESS_FG, ERROR_FG
+from ui_theme import apply_theme, styled_button, maximize_window, restore_window, PRIMARY_BG, SECONDARY_BG, SUCCESS_FG, ERROR_FG
 
 def normalizar_data(data_str):
     formatos = ["%Y-%m-%d", "%Y/%m/%d", "%d/%m/%Y", "%d-%m-%Y"]
@@ -25,12 +25,12 @@ def cadastrar_produto(parent=None, perfil=None):
 
     janela = tk.Toplevel(parent)
     janela.title("Cadastro de Produto")
-    janela.state("zoomed")  # abre maximizada
     apply_theme(janela)
+    maximize_window(janela)
 
     def fechar_janela():
         if parent and parent.winfo_exists():
-            parent.deiconify()
+            restore_window(parent)
         janela.destroy()
 
     janela.protocol("WM_DELETE_WINDOW", fechar_janela)
@@ -173,12 +173,12 @@ def cadastrar_produtos_treeview(parent=None, perfil=None):
 
     janela = tk.Toplevel(parent)
     janela.title("Cadastro em Lote - Treeview")
-    janela.state("zoomed")  # abre maximizada
     apply_theme(janela)
+    maximize_window(janela)
 
     def fechar_janela():
         if parent and parent.winfo_exists():
-            parent.deiconify()
+            restore_window(parent)
         janela.destroy()
 
     janela.protocol("WM_DELETE_WINDOW", fechar_janela)
@@ -380,7 +380,7 @@ def cadastrar_produtos_fornecedor(parent=None, perfil=None):
 
     def fechar_janela():
         if parent and parent.winfo_exists():
-            parent.deiconify()
+            restore_window(parent)
         janela.destroy()
 
     janela.protocol("WM_DELETE_WINDOW", fechar_janela)

@@ -2,7 +2,7 @@ import tkinter as tk
 import sqlite3
 from tkinter import ttk, messagebox
 from db import conexao, cursor
-from ui_theme import apply_theme, styled_button, PRIMARY_BG, HEADER_BG, HEADER_FG, SECONDARY_BG, TREE_ALT_BG, TEXT_PRIMARY_FG, TREE_SEL_BG, BUTTON_TEXT_FG
+from ui_theme import apply_theme, styled_button, maximize_window, restore_window, PRIMARY_BG, HEADER_BG, HEADER_FG, SECONDARY_BG, TREE_ALT_BG, TEXT_PRIMARY_FG, TREE_SEL_BG, BUTTON_TEXT_FG
 
 
 class ClienteCadastro:
@@ -15,7 +15,7 @@ class ClienteCadastro:
         self.janela.title("Editar Cliente" if cliente_id else "Cadastro de Cliente")
         self.janela.geometry("420x380")
         apply_theme(self.janela)
-        self.janela.state("zoomed")
+        maximize_window(self.janela)
 
         self._build_interface()
         self.janela.protocol("WM_DELETE_WINDOW", self._on_close)
@@ -77,7 +77,7 @@ class ClienteCadastro:
                 pass
         if self.master and self.master.winfo_exists():
             try:
-                self.master.deiconify()
+                restore_window(self.master)
             except Exception:
                 pass
         self.janela.destroy()
@@ -159,7 +159,7 @@ class ClienteCadastro:
 def cadastrar_cliente(master=None):
     if master and master.winfo_exists():
         master.withdraw()
-    ClienteCadastro(master, on_close=lambda: master.deiconify() if master and master.winfo_exists() else None)
+    ClienteCadastro(master, on_close=lambda: restore_window(master) if master and master.winfo_exists() else None)
 
 
 def editar_cliente(master=None, cliente_id=None, on_saved=None):
@@ -167,7 +167,7 @@ def editar_cliente(master=None, cliente_id=None, on_saved=None):
         return
     if master and master.winfo_exists():
         master.withdraw()
-    ClienteCadastro(master, cliente_id, on_saved=on_saved, on_close=lambda: master.deiconify() if master and master.winfo_exists() else None)
+    ClienteCadastro(master, cliente_id, on_saved=on_saved, on_close=lambda: restore_window(master) if master and master.winfo_exists() else None)
 
 
 def listar_clientes(master=None):
@@ -178,11 +178,11 @@ def listar_clientes(master=None):
     janela.title("Lista de Clientes")
     janela.geometry("760x420")
     apply_theme(janela)
-    janela.state("zoomed")
+    maximize_window(janela)
 
     def fechar_e_voltar():
         if master and master.winfo_exists():
-            master.deiconify()
+            restore_window(master)
         janela.destroy()
 
     janela.protocol("WM_DELETE_WINDOW", fechar_e_voltar)

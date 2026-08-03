@@ -104,3 +104,77 @@ BUTTON_KINDS = {
 def styled_button(master, text, command=None, kind="primary", fg=BUTTON_TEXT_FG, **kwargs):
     bg = BUTTON_KINDS.get(kind, BUTTON_PRIMARY_BG)
     return tk.Button(master, text=text, bg=bg, fg=fg, command=command, **kwargs)
+
+
+def maximize_window(window):
+    """Tenta maximizar a janela e usa fallback para geometry quando necessário."""
+    try:
+        window.state("zoomed")
+    except Exception:
+        pass
+
+    try:
+        window.attributes("-zoomed", True)
+    except Exception:
+        pass
+
+    try:
+        if window.wm_state() not in ("zoomed", "iconic"):
+            window.geometry(f"{window.winfo_screenwidth()}x{window.winfo_screenheight()}+0+0")
+    except Exception:
+        pass
+
+
+def remember_window_state(window):
+    """Guarda o estado atual da janela para restaurá-lo depois."""
+    if not window:
+        return
+
+    try:
+        state = window.wm_state()
+        if state in ("normal", "zoomed", "iconic"):
+            window._saved_window_state = state
+        else:
+            window._saved_window_state = "normal"
+    except Exception:
+        window._saved_window_state = "normal"
+
+
+def restore_window(window):
+    """Reexibe a janela e restaura o estado anterior, reaplicando maximização apenas se necessário."""
+    if not window:
+        return
+
+    exists = getattr(window, "winfo_exists", None)
+    if exists is not None and not exists():
+        return
+
+    try:
+        window.deiconify()
+    except Exception:
+        pass
+
+    try:
+        window.update_idletasks()
+    except Exception:
+        pass
+
+    def apply_state():
+        saved_state = getattr(window, "_saved_window_state", "normal")
+        if saved_state == "zoomed":
+            maximize_window(window)
+        elif saved_state == "iconic":
+            try:
+                window.state("iconic")
+            except Exception:
+                pass
+        else:
+            try:
+                window.state("normal")
+            except Exception:
+                pass
+
+    try:
+        window.after(0, apply_state)
+    except Exception:
+        apply_state()

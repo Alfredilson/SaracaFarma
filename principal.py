@@ -12,7 +12,7 @@ from tkinter import filedialog
 from controle_estoque import tela_estoque, tela_relatorio
 import datetime
 from db import conexao, cursor
-from ui_theme import apply_theme, styled_button, PRIMARY_BG, HEADER_BG, HEADER_FG, SECONDARY_BG, INFO_FG, TREE_BG, TREE_SEL_BG, TREE_HEADING_FG, TEXT_PRIMARY_FG, BUTTON_TEXT_FG
+from ui_theme import apply_theme, styled_button, maximize_window, remember_window_state, restore_window, PRIMARY_BG, HEADER_BG, HEADER_FG, SECONDARY_BG, INFO_FG, TREE_BG, TREE_SEL_BG, TREE_HEADING_FG, TEXT_PRIMARY_FG, BUTTON_TEXT_FG
 
 def cadastrar_lista_produtos():
     # Função placeholder para cadastro em lote
@@ -30,22 +30,7 @@ def tela_principal(id_usuario):
     principal.title("SaracaFarma - Tela Principal")
     apply_theme(principal)
 
-    # Faz a janela abrir maximizada em todas as plataformas
-    try:
-        principal.state("zoomed")
-    except Exception:
-        pass
-    try:
-        principal.attributes("-zoomed", True)
-    except Exception:
-        pass
-    # Fallback: se não foi possível maximizar, ajustar para o tamanho da tela
-    try:
-        # Alguns backends não respeitam 'zoomed' — definir geometry como fallback
-        if principal.wm_state() not in ("zoomed", "iconic"):
-            principal.geometry(f"{principal.winfo_screenwidth()}x{principal.winfo_screenheight()}+0+0")
-    except Exception:
-        pass
+    maximize_window(principal)
 
     # Fechamento seguro
     def fechar_programa():
@@ -54,6 +39,7 @@ def tela_principal(id_usuario):
         principal.destroy()
 
     principal.protocol("WM_DELETE_WINDOW", fechar_programa)
+    remember_window_state(principal)
 
     # Criar barra de menu
     menubar = tk.Menu(principal)
@@ -61,10 +47,7 @@ def tela_principal(id_usuario):
       # Menu Cadastro
     menu_cadastro = tk.Menu(menubar, tearoff=0)
     # Chamada direta da função de cadastro de produto (passa janela principal e id do usuário)
-    menu_cadastro.add_command(label="Cadastro Individual", command=lambda: cadastrar_produto(principal, id_usuario))
-    menu_cadastro.add_command(label="Cadastro em Lote (Treeview)", command=lambda: cadastrar_produtos_treeview(principal, id_usuario))
-    #---menu_cadastro.add_command(label="Cadastro em Lote (CSV)", command=lambda: cadastrar_produtos_csv(principal, id_usuario))
-    menu_cadastro.add_command(label="Cadastro em Lote via Fornecedor", command=lambda: cadastrar_produtos_fornecedor(principal, id_usuario))
+    menu_cadastro.add_command(label="Cadastro de produto", command=lambda: cadastrar_produtos_treeview(principal, id_usuario))
 
 
     menubar.add_cascade(label="Cadastro", menu=menu_cadastro)

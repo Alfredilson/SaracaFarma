@@ -4,7 +4,7 @@ from tkinter import ttk
 from produto import cadastrar_produto, cadastrar_produtos_fornecedor
 import datetime
 from db import conexao, cursor
-from ui_theme import apply_theme, styled_button, PRIMARY_BG, HEADER_BG, HEADER_FG, SECONDARY_BG, INFO_FG, SUCCESS_FG, ERROR_FG, WARNING_FG
+from ui_theme import apply_theme, styled_button, maximize_window, restore_window, PRIMARY_BG, HEADER_BG, HEADER_FG, SECONDARY_BG, INFO_FG, SUCCESS_FG, ERROR_FG, WARNING_FG
 
 # Função para consultar o estoque e atualizar a Treeview
 def consultar_estoque(tree, status_label):
@@ -181,10 +181,11 @@ def tela_relatorio(parent=None):
 
     janela = tk.Toplevel(parent)
     janela.title("Relatório de Movimentações")
+    maximize_window(janela)
 
     def fechar_e_voltar():
         if parent and parent.winfo_exists():
-            parent.deiconify()
+            restore_window(parent)
         janela.destroy()
 
     janela.protocol("WM_DELETE_WINDOW", fechar_e_voltar)
@@ -230,12 +231,12 @@ def tela_estoque(parent=None, perfil=None):
     # Cria a janela principal da tela de estoque
     janela = tk.Toplevel(parent)
     janela.title("Controle de Estoque")
-    janela.state("zoomed")  # Abre a janela maximizada
     apply_theme(janela)
+    maximize_window(janela)
 
     def fechar_e_voltar():
         if parent and parent.winfo_exists():
-            parent.deiconify()
+            restore_window(parent)
         janela.destroy()
 
     janela.protocol("WM_DELETE_WINDOW", fechar_e_voltar)
